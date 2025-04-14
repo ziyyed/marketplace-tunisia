@@ -1,49 +1,56 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const listingSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true,
-    trim: true
+    required: [true, 'Title is required'],
+    trim: true,
+    minlength: [3, 'Title must be at least 3 characters long']
   },
   description: {
     type: String,
-    required: true
+    required: [true, 'Description is required'],
+    trim: true
   },
   price: {
     type: Number,
-    required: true,
-    min: 0
+    required: [true, 'Price is required'],
+    min: [0, 'Price cannot be negative']
   },
   category: {
     type: String,
-    required: true
+    required: [true, 'Category is required'],
+    trim: true
   },
   location: {
     type: String,
-    required: true
+    required: [true, 'Location is required'],
+    trim: true
   },
   images: [{
-    type: String
+    type: String,
+    default: []
   }],
-  seller: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
   status: {
     type: String,
-    enum: ['active', 'pending', 'sold'],
+    enum: ['active', 'sold', 'inactive'],
     default: 'active'
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  views: {
+    type: Number,
+    default: 0
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+  favorites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('Listing', listingSchema); 
+export default mongoose.model('Listing', listingSchema); 

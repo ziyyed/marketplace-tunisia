@@ -1,17 +1,25 @@
-const express = require('express');
+import express from 'express';
+import Listing from '../models/Listing.js';
+import auth from '../middleware/auth.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
 const router = express.Router();
-const Listing = require('../models/Listing');
-const auth = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
 
 // Configure multer for image upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'src/server/uploads/');
+    const uploadDir = path.join(__dirname, '../uploads');
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
 
@@ -33,28 +41,23 @@ const upload = multer({
 // Get all listings
 router.get('/', async (req, res) => {
   try {
-    const listings = await Listing.find()
-      .populate('seller', 'name avatar')
-      .sort({ createdAt: -1 });
+    const listings = await Listing.find().populate('user', 'name email avatar');
     res.json(listings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Error fetching listings', error: error.message });
   }
 });
 
 // Get listing by ID
 router.get('/:id', async (req, res) => {
   try {
-    const listing = await Listing.findById(req.params.id)
-      .populate('seller', 'name avatar email phone');
-    
+    const listing = await Listing.findById(req.params.id).populate('user', 'name email avatar');
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found' });
     }
-    
     res.json(listing);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Error fetching listing', error: error.message });
   }
 });
 
@@ -69,7 +72,7 @@ router.get('/search/:query', async (req, res) => {
         { location: { $regex: query, $options: 'i' } },
       ],
     })
-      .populate('seller', 'name avatar')
+      .populate('user', 'name avatar')
       .sort({ createdAt: -1 });
     res.json(listings);
   } catch (error) {
@@ -77,78 +80,53 @@ router.get('/search/:query', async (req, res) => {
   }
 });
 
-// Create listing (protected route)
-router.post('/', auth, upload.array('images', 5), async (req, res) => {
+// Create listing
+router.post('/', auth, async (req, res) => {
   try {
-    const { title, description, price, category, location } = req.body;
-    const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-
     const listing = new Listing({
-      title,
-      description,
-      price: Number(price),
-      category,
-      location,
-      images,
-      seller: req.user._id
+      ...req.body,
+      user: req.user._id
     });
-
-    const savedListing = await listing.save();
-    await savedListing.populate('seller', 'name avatar');
-    res.status(201).json(savedListing);
+    await listing.save();
+    res.status(201).json(listing);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: 'Error creating listing', error: error.message });
   }
 });
 
-// Update listing (protected route)
-router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
+// Update listing
+router.put('/:id', auth, async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found' });
     }
-
-    // Check if user owns the listing
-    if (listing.seller.toString() !== req.user._id.toString()) {
+    if (listing.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
-
-    const updates = { ...req.body };
-    if (req.files?.length > 0) {
-      updates.images = req.files.map(file => `/uploads/${file.filename}`);
-    }
-
-    const updatedListing = await Listing.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true }
-    ).populate('seller', 'name avatar');
-
-    res.json(updatedListing);
+    Object.assign(listing, req.body);
+    await listing.save();
+    res.json(listing);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: 'Error updating listing', error: error.message });
   }
 });
 
-// Delete listing (protected route)
+// Delete listing
 router.delete('/:id', auth, async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found' });
     }
-
-    // Check if user owns the listing
-    if (listing.seller.toString() !== req.user._id.toString()) {
+    if (listing.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
-
     await listing.deleteOne();
-    res.json({ message: 'Listing deleted successfully' });
+    res.json({ message: 'Listing deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Error deleting listing', error: error.message });
   }
 });
 
-module.exports = router; 
+export default router; 

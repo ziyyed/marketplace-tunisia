@@ -6,216 +6,135 @@ import {
   Typography,
   Button,
   IconButton,
-  Badge,
   Menu,
   MenuItem,
   Box,
-  useMediaQuery,
-  useTheme,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  Avatar,
+  InputBase,
+  Badge,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
   Search as SearchIcon,
-  Notifications as NotificationsIcon,
   Person as PersonIcon,
-  Dashboard as DashboardIcon,
-  Message as MessageIcon,
-  Favorite as FavoriteIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
+  ShoppingCart as CartIcon,
+  Notifications as NotificationsIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import SearchBar from './SearchBar';
+import SearchBar from '../Search/SearchBar';
 
 const Navbar = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState(null);
 
-  const handleProfileMenuOpen = (event) => {
+  const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMenuClose = () => {
+  const handleClose = () => {
     setAnchorEl(null);
   };
 
   const handleLogout = () => {
     logout();
-    handleMenuClose();
+    handleClose();
     navigate('/');
   };
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Messages', icon: <MessageIcon />, path: '/messages' },
-    { text: 'Favorites', icon: <FavoriteIcon />, path: '/favorites' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-  ];
-
-  const renderMobileMenu = (
-    <Drawer
-      anchor="left"
-      open={mobileMenuOpen}
-      onClose={() => setMobileMenuOpen(false)}
-    >
-      <Box sx={{ width: 250 }}>
-        <List>
-          {menuItems.map((item) => (
-            <ListItem
-              button
-              key={item.text}
-              component={RouterLink}
-              to={item.path}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItem>
-          ))}
-          <Divider />
-          <ListItem button onClick={handleLogout}>
-            <ListItemIcon>
-              <LogoutIcon />
-            </ListItemIcon>
-            <ListItemText primary="Logout" />
-          </ListItem>
-        </List>
-      </Box>
-    </Drawer>
-  );
-
-  const renderProfileMenu = (
-    <Menu
-      anchorEl={anchorEl}
-      open={Boolean(anchorEl)}
-      onClose={handleMenuClose}
-      onClick={handleMenuClose}
-    >
-      {menuItems.map((item) => (
-        <MenuItem
-          key={item.text}
-          component={RouterLink}
-          to={item.path}
-        >
-          <ListItemIcon>{item.icon}</ListItemIcon>
-          <ListItemText primary={item.text} />
-        </MenuItem>
-      ))}
-      <Divider />
-      <MenuItem onClick={handleLogout}>
-        <ListItemIcon>
-          <LogoutIcon />
-        </ListItemIcon>
-        <ListItemText primary="Logout" />
-      </MenuItem>
-    </Menu>
-  );
-
   return (
-    <>
-      <AppBar position="sticky" elevation={0}>
-        <Toolbar>
-          {isMobile && (
-            <IconButton
-              edge="start"
-              color="inherit"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
-          <Typography
-            variant="h6"
-            component={RouterLink}
-            to="/"
-            sx={{
-              flexGrow: 1,
-              textDecoration: 'none',
-              color: 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            Marketplace Tunisia
-          </Typography>
+    <AppBar position="sticky">
+      <Toolbar>
+        <Typography
+          variant="h6"
+          component={RouterLink}
+          to="/"
+          sx={{
+            flexGrow: 1,
+            textDecoration: 'none',
+            color: 'inherit',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          Marketplace Tunisia
+        </Typography>
 
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-            <SearchBar />
-            {user ? (
-              <>
-                <IconButton color="inherit">
-                  <Badge badgeContent={4} color="error">
-                    <NotificationsIcon />
-                  </Badge>
-                </IconButton>
-                <IconButton
-                  color="inherit"
-                  onClick={handleProfileMenuOpen}
-                >
-                  <Avatar
-                    src={user.avatar}
-                    alt={user.name}
-                    sx={{ width: 32, height: 32 }}
-                  />
-                </IconButton>
-              </>
-            ) : (
-              <>
-                <Button
-                  color="inherit"
-                  component={RouterLink}
-                  to="/login"
-                >
-                  Login
-                </Button>
-                <Button
-                  color="inherit"
-                  component={RouterLink}
-                  to="/register"
-                  variant="outlined"
-                  sx={{ ml: 1 }}
-                >
-                  Register
-                </Button>
-              </>
-            )}
-          </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <SearchBar />
 
-          {isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <IconButton color="inherit">
-                <SearchIcon />
+          {user ? (
+            <>
+              <IconButton
+                color="inherit"
+                component={RouterLink}
+                to="/listings/create"
+              >
+                <AddIcon />
               </IconButton>
-              {user && (
-                <IconButton
-                  color="inherit"
-                  onClick={handleProfileMenuOpen}
-                >
-                  <Avatar
-                    src={user.avatar}
-                    alt={user.name}
-                    sx={{ width: 32, height: 32 }}
-                  />
-                </IconButton>
-              )}
-            </Box>
+
+              <IconButton color="inherit" component={RouterLink} to="/messages">
+                <Badge badgeContent={4} color="error">
+                  <CartIcon />
+                </Badge>
+              </IconButton>
+
+              <IconButton color="inherit" component={RouterLink} to="/notifications">
+                <Badge badgeContent={2} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+
+              <IconButton
+                color="inherit"
+                onClick={handleMenu}
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+              >
+                <PersonIcon />
+              </IconButton>
+
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+              >
+                <MenuItem component={RouterLink} to="/profile" onClick={handleClose}>
+                  Profile
+                </MenuItem>
+                <MenuItem component={RouterLink} to="/dashboard" onClick={handleClose}>
+                  Dashboard
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+              </Menu>
+            </>
+          ) : (
+            <>
+              <Button color="inherit" component={RouterLink} to="/login">
+                Login
+              </Button>
+              <Button
+                color="inherit"
+                variant="outlined"
+                component={RouterLink}
+                to="/register"
+              >
+                Register
+              </Button>
+            </>
           )}
-        </Toolbar>
-      </AppBar>
-      {renderMobileMenu}
-      {renderProfileMenu}
-    </>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 };
 

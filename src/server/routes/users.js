@@ -1,109 +1,119 @@
-const express = require('express');
+import express from 'express';
+import User from '../models/User.js';
+import auth from '../middleware/auth.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
 const router = express.Router();
-const User = require('../models/User');
-const auth = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
 
 // Configure multer for avatar upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'src/server/uploads/');
+    const uploadDir = 'src/server/uploads/avatars';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
 const upload = multer({
   storage,
-  limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB limit
-  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Only JPEG and PNG are allowed.'));
+    const allowedTypes = /jpeg|jpg|png/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
     }
+    cb(new Error('Only .jpeg, .jpg and .png format allowed!'));
   }
 });
 
-// Get user profile (protected route)
+// Get user profile
 router.get('/profile', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
-      .select('-password')
-      .populate('listings', 'title price images createdAt')
-      .populate('favorites', 'title price images createdAt');
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Error fetching profile', error: error.message });
   }
 });
 
-// Update user profile (protected route)
-router.put('/profile', auth, upload.single('avatar'), async (req, res) => {
+// Update user profile
+router.put('/profile', auth, async (req, res) => {
   try {
-    const updates = { ...req.body };
-    if (req.file) {
-      updates.avatar = `/uploads/${req.file.filename}`;
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ['name', 'email', 'location', 'phone'];
+    const isValidOperation = updates.every(update => allowedUpdates.includes(update));
+
+    if (!isValidOperation) {
+      return res.status(400).json({ message: 'Invalid updates' });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updates,
-      { new: true }
-    ).select('-password');
-
-    res.json(user);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
-// Get user by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id)
-      .select('name avatar location joined listings')
-      .populate('listings', 'title price images createdAt');
-
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    updates.forEach(update => user[update] = req.body[update]);
+    await user.save();
+
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: 'Error updating profile', error: error.message });
   }
 });
 
-// Add listing to favorites (protected route)
-router.post('/favorites/:listingId', auth, async (req, res) => {
+// Update user avatar
+router.put('/avatar', auth, upload.single('avatar'), async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    if (!user.favorites.includes(req.params.listingId)) {
-      user.favorites.push(req.params.listingId);
-      await user.save();
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload an image' });
     }
-    res.json({ message: 'Added to favorites' });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
 
-// Remove listing from favorites (protected route)
-router.delete('/favorites/:listingId', auth, async (req, res) => {
-  try {
     const user = await User.findById(req.user._id);
-    user.favorites = user.favorites.filter(id => id.toString() !== req.params.listingId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Delete old avatar if exists
+    if (user.avatar) {
+      const oldAvatarPath = path.join(__dirname, '..', user.avatar);
+      if (fs.existsSync(oldAvatarPath)) {
+        fs.unlinkSync(oldAvatarPath);
+      }
+    }
+
+    user.avatar = `/uploads/avatars/${req.file.filename}`;
     await user.save();
-    res.json({ message: 'Removed from favorites' });
+
+    res.json({ avatar: user.avatar });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: 'Error updating avatar', error: error.message });
   }
 });
 
-module.exports = router; 
+// Get user by ID
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user', error: error.message });
+  }
+});
+
+export default router; 

@@ -1,13 +1,15 @@
 import axios from 'axios';
 
+const API_URL = 'http://localhost:5003/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: process.env.NODE_ENV === 'production' ? '/api' : API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add a request interceptor to add the auth token to requests
+// Add token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -16,11 +18,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Listings API
 const listings = {
   getAll: () => api.get('/listings'),
   getById: (id) => api.get(`/listings/${id}`),
-  search: (query, filters) => api.get('/listings/search', { params: { q: query, ...filters } }),
+  search: (filters) => api.get('/listings/search', { params: filters }),
   create: (data) => api.post('/listings', data),
   update: (id, data) => api.put(`/listings/${id}`, data),
   delete: (id) => api.delete(`/listings/${id}`),
@@ -52,10 +65,13 @@ const messages = {
 const auth = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
+  verifyToken: () => api.get('/auth/verify'),
   logout: () => {
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
   },
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => api.post(`/auth/reset-password/${token}`, { password }),
 };
 
 // Backward compatible exports
@@ -73,4 +89,4 @@ export const login = (credentials) => auth.login(credentials);
 export const register = (userData) => auth.register(userData);
 export const logout = () => auth.logout();
 
-export { api, listings, users, messages, auth }; 
+export { api, auth, listings, users, messages }; 
