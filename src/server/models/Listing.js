@@ -22,9 +22,29 @@ const listingSchema = new mongoose.Schema({
     required: [true, 'Category is required'],
     trim: true
   },
+  condition: {
+    type: String,
+    default: 'Used'
+  },
   location: {
     type: String,
     required: [true, 'Location is required'],
+    trim: true
+  },
+  neighborhood: {
+    type: String,
+    trim: true
+  },
+  brand: {
+    type: String,
+    trim: true
+  },
+  model: {
+    type: String,
+    trim: true
+  },
+  phone: {
+    type: String,
     trim: true
   },
   images: [{

@@ -19,6 +19,16 @@ import { format } from 'date-fns';
 const ListingCard = ({ listing }) => {
   const navigate = useNavigate();
 
+  const handleCardClick = () => {
+    // Link to the new ProductDetails page for products, or use ListingDetail for service listings
+    if (listing.category === 'Electronics' || listing.category === 'Computers' || 
+        listing.category === 'Fashion' || listing.category === 'Gaming') {
+      navigate(`/products/${listing._id}`);
+    } else {
+      navigate(`/listings/${listing._id}`);
+    }
+  };
+
   return (
     <Card
       sx={{
@@ -32,7 +42,7 @@ const ListingCard = ({ listing }) => {
           boxShadow: 3,
         },
       }}
-      onClick={() => navigate(`/listings/${listing._id}`)}
+      onClick={handleCardClick}
     >
       <Box sx={{ position: 'relative' }}>
         <CardMedia

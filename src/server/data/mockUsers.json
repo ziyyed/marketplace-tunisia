@@ -1,0 +1,20 @@
+[
+  {
+    "_id": "user1",
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password123",
+    "avatar": "https://placehold.co/150?text=TU",
+    "location": "Tunis",
+    "phone": "12345678"
+  },
+  {
+    "_id": "user2",
+    "name": "zied chouk",
+    "email": "zied.chouk2015@gmail.com",
+    "password": "!WN7ddmhgF.s8Q-",
+    "avatar": "https://placehold.co/150?text=z",
+    "location": "Mahdia",
+    "phone": "+21652777454"
+  }
+]

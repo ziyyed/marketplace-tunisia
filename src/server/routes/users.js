@@ -1,118 +1,73 @@
 import express from 'express';
-import User from '../models/User.js';
-import auth from '../middleware/auth.js';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import { verifyToken } from './auth.js';
 
 const router = express.Router();
 
-// Configure multer for avatar upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'src/server/uploads/avatars';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+// Mock user data
+const mockUsers = [
+  {
+    _id: 'user1',
+    name: 'Test User',
+    email: 'test@example.com',
+    avatar: 'https://placehold.co/150?text=TU',
+    location: 'Tunis',
+    phone: '12345678'
   }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      return cb(null, true);
-    }
-    cb(new Error('Only .jpeg, .jpg and .png format allowed!'));
-  }
-});
+];
 
 // Get user profile
-router.get('/profile', auth, async (req, res) => {
+router.get('/profile', verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const user = mockUsers.find(user => user._id === req.user._id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching profile', error: error.message });
+    console.error('Profile error:', error);
+    res.status(500).json({ message: 'Error fetching profile' });
   }
 });
 
 // Update user profile
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', verifyToken, async (req, res) => {
   try {
-    const updates = Object.keys(req.body);
-    const allowedUpdates = ['name', 'email', 'location', 'phone'];
-    const isValidOperation = updates.every(update => allowedUpdates.includes(update));
-
-    if (!isValidOperation) {
-      return res.status(400).json({ message: 'Invalid updates' });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
+    const { name, email, location, phone } = req.body;
+    
+    // Find user
+    const userIndex = mockUsers.findIndex(user => user._id === req.user._id);
+    if (userIndex === -1) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    updates.forEach(update => user[update] = req.body[update]);
-    await user.save();
-
-    res.json(user);
+    
+    // Update user
+    const user = mockUsers[userIndex];
+    mockUsers[userIndex] = {
+      ...user,
+      name: name || user.name,
+      email: email || user.email,
+      location: location || user.location,
+      phone: phone || user.phone
+    };
+    
+    res.json(mockUsers[userIndex]);
   } catch (error) {
-    res.status(400).json({ message: 'Error updating profile', error: error.message });
-  }
-});
-
-// Update user avatar
-router.put('/avatar', auth, upload.single('avatar'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'Please upload an image' });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Delete old avatar if exists
-    if (user.avatar) {
-      const oldAvatarPath = path.join(__dirname, '..', user.avatar);
-      if (fs.existsSync(oldAvatarPath)) {
-        fs.unlinkSync(oldAvatarPath);
-      }
-    }
-
-    user.avatar = `/uploads/avatars/${req.file.filename}`;
-    await user.save();
-
-    res.json({ avatar: user.avatar });
-  } catch (error) {
-    res.status(400).json({ message: 'Error updating avatar', error: error.message });
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Error updating profile' });
   }
 });
 
 // Get user by ID
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = mockUsers.find(user => user._id === req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching user', error: error.message });
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Error fetching user' });
   }
 });
 

@@ -1,111 +1,129 @@
 import express from 'express';
-import Message from '../models/Message.js';
-import auth from '../middleware/auth.js';
+import { verifyToken } from './auth.js';
 
 const router = express.Router();
 
-// Get all conversations for a user
-router.get('/conversations', auth, async (req, res) => {
-  try {
-    const conversations = await Message.aggregate([
-      {
-        $match: {
-          $or: [
-            { sender: req.user._id },
-            { recipient: req.user._id }
-          ]
-        }
-      },
-      {
-        $sort: { createdAt: -1 }
-      },
-      {
-        $group: {
-          _id: {
-            $cond: [
-              { $eq: ['$sender', req.user._id] },
-              '$recipient',
-              '$sender'
-            ]
-          },
-          lastMessage: { $first: '$$ROOT' }
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'user'
-        }
-      },
-      {
-        $unwind: '$user'
-      },
-      {
-        $project: {
-          _id: 1,
-          'user.name': 1,
-          'user.avatar': 1,
-          'lastMessage.content': 1,
-          'lastMessage.createdAt': 1,
-          'lastMessage.read': 1
-        }
-      }
-    ]);
+// Mock conversations data
+const mockConversations = [
+  {
+    _id: 'conv1',
+    participants: ['user1', 'user2'],
+    listing: 'mock1',
+    lastMessage: 'message1',
+    updatedAt: new Date().toISOString()
+  }
+];
 
+// Mock messages data
+const mockMessages = [
+  {
+    _id: 'message1',
+    conversation: 'conv1',
+    sender: 'user2',
+    recipient: 'user1',
+    content: 'Hi, is this item still available?',
+    read: true,
+    createdAt: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    _id: 'message2',
+    conversation: 'conv1',
+    sender: 'user1',
+    recipient: 'user2',
+    content: 'Yes, it is still available!',
+    read: false,
+    createdAt: new Date().toISOString()
+  }
+];
+
+// Get conversations for current user
+router.get('/conversations', verifyToken, async (req, res) => {
+  try {
+    // Filter conversations where the user is a participant
+    const conversations = mockConversations.filter(
+      conv => conv.participants.includes(req.user._id)
+    );
+    
     res.json(conversations);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching conversations', error: error.message });
+    console.error('Get conversations error:', error);
+    res.status(500).json({ message: 'Error fetching conversations' });
   }
 });
 
-// Get messages between two users
-router.get('/:userId', auth, async (req, res) => {
+// Get messages for a conversation
+router.get('/:conversationId', verifyToken, async (req, res) => {
   try {
-    const messages = await Message.find({
-      $or: [
-        { sender: req.user._id, recipient: req.params.userId },
-        { sender: req.params.userId, recipient: req.user._id }
-      ]
-    })
-    .sort({ createdAt: 1 })
-    .populate('sender', 'name avatar')
-    .populate('recipient', 'name avatar');
-
-    // Mark messages as read
-    await Message.updateMany(
-      {
-        recipient: req.user._id,
-        sender: req.params.userId,
-        read: false
-      },
-      { read: true }
-    );
-
+    const { conversationId } = req.params;
+    
+    // Find conversation
+    const conversation = mockConversations.find(conv => conv._id === conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation not found' });
+    }
+    
+    // Check if user is a participant
+    if (!conversation.participants.includes(req.user._id)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    // Get messages for conversation
+    const messages = mockMessages.filter(msg => msg.conversation === conversationId);
+    
     res.json(messages);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching messages', error: error.message });
+    console.error('Get messages error:', error);
+    res.status(500).json({ message: 'Error fetching messages' });
   }
 });
 
 // Send a message
-router.post('/:userId', auth, async (req, res) => {
+router.post('/:conversationId', verifyToken, async (req, res) => {
   try {
+    const { conversationId } = req.params;
     const { content } = req.body;
-    const message = new Message({
+    
+    // Validate content
+    if (!content) {
+      return res.status(400).json({ message: 'Message content is required' });
+    }
+    
+    // Find conversation
+    const conversation = mockConversations.find(conv => conv._id === conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation not found' });
+    }
+    
+    // Check if user is a participant
+    if (!conversation.participants.includes(req.user._id)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    // Get other participant
+    const recipient = conversation.participants.find(p => p !== req.user._id);
+    
+    // Create new message
+    const newMessage = {
+      _id: 'message' + (mockMessages.length + 1),
+      conversation: conversationId,
       sender: req.user._id,
-      recipient: req.params.userId,
-      content
-    });
-
-    await message.save();
-    await message.populate('sender', 'name avatar');
-    await message.populate('recipient', 'name avatar');
-
-    res.status(201).json(message);
+      recipient,
+      content,
+      read: false,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Add message to mock data
+    mockMessages.push(newMessage);
+    
+    // Update conversation lastMessage and updatedAt
+    conversation.lastMessage = newMessage._id;
+    conversation.updatedAt = newMessage.createdAt;
+    
+    res.status(201).json(newMessage);
   } catch (error) {
-    res.status(400).json({ message: 'Error sending message', error: error.message });
+    console.error('Send message error:', error);
+    res.status(500).json({ message: 'Error sending message' });
   }
 });
 

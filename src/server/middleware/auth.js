@@ -3,22 +3,39 @@ import User from '../models/User.js';
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    console.log('[Auth Middleware] Checking authentication for route:', req.method, req.originalUrl);
+    const authHeader = req.headers.authorization;
     
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('[Auth Middleware] No token provided or invalid format:', authHeader);
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
-
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+    const token = authHeader.split(' ')[1];
+    console.log('[Auth Middleware] Token received:', token.substring(0, 15) + '...');
+    
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      console.log('[Auth Middleware] Token verified for user ID:', decoded.userId);
+      
+      // Get user from database
+      const user = await User.findById(decoded.userId).select('-password');
+      
+      if (!user) {
+        console.log('[Auth Middleware] User not found in database with ID:', decoded.userId);
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      // Set user in request
+      req.user = user;
+      console.log('[Auth Middleware] Authentication successful for user:', user.name);
+      next();
+    } catch (jwtError) {
+      console.error('[Auth Middleware] JWT verification error:', jwtError.message);
+      return res.status(401).json({ message: 'Token is not valid' });
     }
-
-    req.user = user;
-    next();
   } catch (error) {
+    console.error('[Auth Middleware] Auth error:', error);
     res.status(401).json({ message: 'Token is not valid' });
   }
 };
