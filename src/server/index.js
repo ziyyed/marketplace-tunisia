@@ -11,13 +11,15 @@ import messagesRouter from './routes/messages.js';
 import authRouter from './routes/auth.js';
 import fs from 'fs';
 
+// Import necessary modules
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5003;
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -35,7 +37,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB
@@ -46,7 +48,15 @@ const upload = multer({
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Log all requests to /uploads for debugging
+app.use('/uploads', (req, res, next) => {
+  console.log('Static file request:', req.url);
+  next();
+});
 
 // Make upload available to routes
 app.use((req, res, next) => {
@@ -63,7 +73,7 @@ app.use('/api/listings', (req, res, next) => {
     console.log('Listing creation request received!');
     console.log('Auth header:', req.headers.authorization ? 'Present' : 'Missing');
     console.log('Content-Type:', req.headers['content-type']);
-    
+
     return upload.array('images', 10)(req, res, (err) => {
       if (err) {
         console.error('Multer error:', err);
@@ -83,11 +93,23 @@ app.use('/api/auth', authRouter);
 
 // Debug endpoint to check server status
 app.get('/api/status', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     time: new Date().toISOString(),
     env: process.env.NODE_ENV || 'development'
   });
+});
+
+// Clear localStorage token (for development)
+app.get('/api/clear-token', (req, res) => {
+  console.log('Clearing token from localStorage');
+  res.send(`
+    <script>
+      localStorage.removeItem('token');
+      console.log('Token cleared from localStorage');
+      window.location.href = '/';
+    </script>
+  `);
 });
 
 // Error handling middleware
@@ -108,8 +130,9 @@ app.use((req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Access the server at http://localhost:${PORT} or your local IP address`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
@@ -117,4 +140,4 @@ const startServer = async () => {
   }
 };
 
-startServer(); 
+startServer();

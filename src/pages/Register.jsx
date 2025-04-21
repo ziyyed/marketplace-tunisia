@@ -33,7 +33,14 @@ const Register = () => {
     location: '',
     phone: '',
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    location: '',
+    phone: '',
+  });
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -42,46 +49,56 @@ const Register = () => {
       ...prev,
       [name]: value,
     }));
+
     // Clear error when user starts typing
-    if (error) setError('');
+    setErrors((prev) => ({
+      ...prev,
+      [name]: '',
+    }));
   };
 
   const validateForm = () => {
+    let isValid = true;
+    let newErrors = { ...errors };
+
     if (!formData.name.trim()) {
-      setError('Name is required');
-      return false;
+      newErrors.name = 'Name is required';
+      isValid = false;
     }
     if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
+      newErrors.email = 'Email is required';
+      isValid = false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Invalid email format');
-      return false;
+      newErrors.email = 'Invalid email format';
+      isValid = false;
     }
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return false;
+      newErrors.password = 'Password must be at least 6 characters long';
+      isValid = false;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
+      newErrors.confirmPassword = 'Passwords do not match';
+      isValid = false;
     }
     if (!formData.location.trim()) {
-      setError('Location is required');
-      return false;
+      newErrors.location = 'Location is required';
+      isValid = false;
     }
     if (!formData.phone.trim()) {
-      setError('Phone number is required');
-      return false;
+      newErrors.phone = 'Phone number is required';
+      isValid = false;
+    } else if (!/^\d{8}$/.test(formData.phone)) {
+      newErrors.phone = 'Phone number must be exactly 8 digits';
+      isValid = false;
     }
-    return true;
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
     if (!validateForm()) {
       return;
     }
@@ -93,10 +110,10 @@ const Register = () => {
       navigate('/');
     } catch (err) {
       console.error('Registration error:', err);
-      setError(
-        err.response?.data?.message || 
-        'Registration failed. Please check your information and try again.'
-      );
+      setErrors({
+        ...errors,
+        general: err.response?.data?.message || 'Registration failed. Please check your information and try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -128,9 +145,9 @@ const Register = () => {
             </Typography>
           </Box>
 
-          {error && (
+          {errors.general && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
+              {errors.general}
             </Alert>
           )}
 
@@ -154,6 +171,8 @@ const Register = () => {
                 ),
               }}
               sx={{ mb: 2 }}
+              helperText={errors.name}
+              error={!!errors.name}
             />
             <TextField
               margin="normal"
@@ -173,6 +192,8 @@ const Register = () => {
                 ),
               }}
               sx={{ mb: 2 }}
+              helperText={errors.email}
+              error={!!errors.email}
             />
             <TextField
               margin="normal"
@@ -193,6 +214,8 @@ const Register = () => {
                 ),
               }}
               sx={{ mb: 2 }}
+              helperText={errors.password}
+              error={!!errors.password}
             />
             <TextField
               margin="normal"
@@ -213,6 +236,8 @@ const Register = () => {
                 ),
               }}
               sx={{ mb: 2 }}
+              helperText={errors.confirmPassword}
+              error={!!errors.confirmPassword}
             />
             <TextField
               margin="normal"
@@ -232,6 +257,8 @@ const Register = () => {
                 ),
               }}
               sx={{ mb: 2 }}
+              helperText={errors.location}
+              error={!!errors.location}
             />
             <TextField
               margin="normal"
@@ -251,6 +278,8 @@ const Register = () => {
                 ),
               }}
               sx={{ mb: 3 }}
+              helperText={errors.phone}
+              error={!!errors.phone}
             />
             <Button
               type="submit"
@@ -299,4 +328,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

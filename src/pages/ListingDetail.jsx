@@ -81,7 +81,7 @@ const ListingDetail = () => {
     );
   }
 
-  const isOwner = user && user._id === listing.seller._id;
+  const isOwner = user && user._id === listing.user._id;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -121,7 +121,8 @@ const ListingDetail = () => {
             <CardMedia
               component="img"
               height="400"
-              image={listing.images[0] || '/placeholder.jpg'}
+              image={listing.images[0]?.startsWith('http') ? listing.images[0] :
+                    `http://${window.location.hostname}:5002${listing.images[0]}` || '/placeholder.jpg'}
               alt={listing.title}
             />
             <CardContent>
@@ -169,8 +170,9 @@ const ListingDetail = () => {
               <Box display="flex" alignItems="center" mb={2}>
                 <Box
                   component="img"
-                  src={listing.seller.avatar || '/default-avatar.png'}
-                  alt={listing.seller.name}
+                  src={listing.user.avatar?.startsWith('http') ? listing.user.avatar :
+                       `http://${window.location.hostname}:5002${listing.user.avatar}` || '/default-avatar.png'}
+                  alt={listing.user.name}
                   sx={{
                     width: 50,
                     height: 50,
@@ -179,9 +181,9 @@ const ListingDetail = () => {
                   }}
                 />
                 <Box>
-                  <Typography variant="subtitle1">{listing.seller.name}</Typography>
+                  <Typography variant="subtitle1">{listing.user.name}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Member since {format(new Date(listing.seller.createdAt), 'MMMM yyyy')}
+                    Member since {format(new Date(listing.user.createdAt || listing.createdAt), 'MMMM yyyy')}
                   </Typography>
                 </Box>
               </Box>
@@ -219,4 +221,4 @@ const ListingDetail = () => {
   );
 };
 
-export default ListingDetail; 
+export default ListingDetail;

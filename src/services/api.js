@@ -1,13 +1,17 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/networkUtils';
 
-const API_URL = 'http://localhost:5003/api';
+// Get the API URL dynamically based on the environment
+const API_URL = getApiBaseUrl();
 
 const api = axios.create({
-  baseURL: process.env.NODE_ENV === 'production' ? '/api' : API_URL,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+console.log('Using API URL:', API_URL);
 
 // Add token to requests
 api.interceptors.request.use((config) => {
@@ -89,12 +93,12 @@ const listings = {
       .then(response => response.data);
   },
   create: (data) => {
-    console.log("Creating new listing with data:", 
-      data instanceof FormData 
-        ? "FormData object" 
+    console.log("Creating new listing with data:",
+      data instanceof FormData
+        ? "FormData object"
         : data
     );
-    
+
     // If it's not FormData, convert it to FormData for file uploads
     let formData;
     if (!(data instanceof FormData)) {
@@ -104,7 +108,7 @@ const listings = {
       });
     } else {
       formData = data;
-      
+
       // Debug FormData contents
       console.log("FormData fields:");
       for(let pair of formData.entries()) {
@@ -116,7 +120,7 @@ const listings = {
         }
       }
     }
-    
+
     // Make the API call to the server with proper content type for FormData
     return api.post('/listings', formData, {
       headers: {
@@ -132,14 +136,33 @@ const listings = {
   },
   update: (id, data) => api.put(`/listings/${id}`, data),
   delete: (id) => api.delete(`/listings/${id}`),
-  getByUser: (userId) => api.get(`/listings/user/${userId}`),
+  getByUser: async (userId) => {
+    try {
+      console.log(`Fetching listings for user ${userId}`);
+      const response = await api.get(`/listings/user/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching listings for user ${userId}:`, error);
+      // Return empty array instead of throwing to avoid breaking the UI
+      return [];
+    }
+  },
   getFavorites: () => api.get('/listings/favorites'),
 };
 
 // Users API
 const users = {
   getProfile: () => api.get('/users/profile'),
-  getById: (id) => api.get(`/users/${id}`),
+  getById: async (id) => {
+    try {
+      console.log(`Fetching user with ID ${id}`);
+      const response = await api.get(`/users/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching user with ID ${id}:`, error);
+      throw new Error(error.response?.data?.message || 'Failed to load user profile');
+    }
+  },
   updateProfile: (data) => api.put('/users/profile', data),
   updateAvatar: (formData) => api.put('/users/avatar', formData, {
     headers: {
@@ -163,49 +186,49 @@ const auth = {
     try {
       const response = await api.post('/auth/login', credentials);
       console.log('Login response:', response.status);
-      
+
       // Save token
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
         api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
         console.log('Token saved to localStorage');
       }
-      
+
       return response;
     } catch (error) {
       console.error('Login API error:', error.message);
       throw error;
     }
   },
-  
+
   register: async (userData) => {
     console.log('Registration request for:', userData.email);
     try {
       const response = await api.post('/auth/register', userData);
       console.log('Registration response:', response.status);
-      
+
       // Save token
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
         api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
         console.log('Token saved to localStorage');
       }
-      
+
       return response;
     } catch (error) {
       console.error('Registration API error:', error.message);
       throw error;
     }
   },
-  
+
   verifyToken: async () => {
     const token = localStorage.getItem('token');
     console.log('Verifying token:', token ? `${token.substring(0, 15)}...` : 'No token');
-    
+
     if (!token) {
       return Promise.reject(new Error('No token found'));
     }
-    
+
     try {
       // Ensure header is set
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -219,13 +242,13 @@ const auth = {
       throw error;
     }
   },
-  
+
   logout: () => {
     console.log('Logging out, removing token');
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
   },
-  
+
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
   resetPassword: (token, password) => api.post(`/auth/reset-password/${token}`, { password }),
 };
@@ -245,4 +268,4 @@ export const login = (credentials) => auth.login(credentials);
 export const register = (userData) => auth.register(userData);
 export const logout = () => auth.logout();
 
-export { api, auth, listings, users, messages }; 
+export { api, auth, listings, users, messages };

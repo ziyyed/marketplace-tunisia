@@ -15,6 +15,7 @@ import ListingDetail from './pages/ListingDetail';
 import CreateListing from './pages/CreateListing';
 import Search from './pages/Search';
 import Profile from './pages/Profile';
+import ProfileEdit from './pages/ProfileEdit';
 import Messages from './pages/Messages';
 import Favorites from './pages/Favorites';
 import Notifications from './pages/Notifications';
@@ -57,6 +58,8 @@ function App() {
               <Route path="/listings/:id" element={<ListingDetail />} />
               <Route path="/products/:id" element={<ProductDetails />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/profile/edit" element={<ProfileEdit />} />
+              <Route path="/profile/:id" element={<Profile />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/favorites" element={<Favorites />} />
@@ -73,4 +76,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

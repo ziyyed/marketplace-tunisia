@@ -37,6 +37,7 @@ import 'swiper/css/pagination';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/networkUtils';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -51,10 +52,47 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        // Mock data for now - would be replaced with actual API call
-        const response = await axios.get(`/api/listings/${id}`);
-        setProduct(response.data);
-        setIsFavorite(response.data.isFavorite || false);
+        // Fetch real data from the API
+        const apiBaseUrl = getApiBaseUrl();
+        const response = await axios.get(`${apiBaseUrl}/listings/${id}`);
+        console.log('Product data:', response.data);
+
+        // Transform the data to match our component's expectations
+        const productData = {
+          id: response.data._id,
+          title: response.data.title,
+          price: response.data.price,
+          description: response.data.description,
+          category: response.data.category,
+          condition: response.data.condition,
+          location: response.data.location,
+          images: response.data.images.map(img => {
+            if (img.startsWith('http')) return img;
+            const hostname = window.location.hostname;
+            return `http://${hostname}:5002${img}`;
+          }),
+          createdAt: new Date(response.data.createdAt),
+          seller: {
+            id: response.data.user._id,
+            name: response.data.user.name,
+            avatar: (() => {
+              const avatar = response.data.user.avatar;
+              if (!avatar) return 'https://placehold.co/150?text=U';
+              if (avatar.startsWith('http')) return avatar;
+              const hostname = window.location.hostname;
+              return `http://${hostname}:5002${avatar}`;
+            })(),
+            rating: response.data.user.rating || 4.5,
+            reviewCount: response.data.user.reviews?.length || 0,
+            memberSince: new Date(response.data.user.createdAt || response.data.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            responseRate: '95%',
+            responseTime: 'Within a day',
+            phone: response.data.phone || 'Not provided'
+          },
+        };
+
+        setProduct(productData);
+        setIsFavorite(false); // Default to not favorited
       } catch (err) {
         setError('Failed to load product details');
         console.error(err);
@@ -63,35 +101,7 @@ const ProductDetails = () => {
       }
     };
 
-    // Mocking the API call with dummy data for now
-    setTimeout(() => {
-      setProduct({
-        id,
-        title: 'iPhone 13 Pro Max - 256GB - Excellent Condition',
-        price: 2000,
-        description: 'Selling my iPhone 13 Pro Max in excellent condition. Only used for 8 months. No scratches or dents. Comes with original charger and box. Battery health is at 95%. Color: Sierra Blue.',
-        category: 'Electronics',
-        condition: 'Used - Like New',
-        location: 'Tunis, Tunisia',
-        images: [
-          'https://placehold.co/600x400?text=iPhone+13+Pro+Max',
-          'https://placehold.co/600x400?text=iPhone+13+Pro+Max+2',
-          'https://placehold.co/600x400?text=iPhone+13+Pro+Max+3',
-        ],
-        createdAt: new Date(2023, 5, 15),
-        seller: {
-          id: '123',
-          name: 'Ahmed Ben Ali',
-          avatar: 'https://placehold.co/150?text=A',
-          rating: 4.7,
-          reviewCount: 23,
-          memberSince: 'Jan 2022',
-          responseRate: '98%',
-          responseTime: 'Within 1 hour',
-        },
-      });
-      setLoading(false);
-    }, 1000);
+    fetchProduct();
   }, [id]);
 
   const handleToggleFavorite = () => {
@@ -163,7 +173,7 @@ const ProductDetails = () => {
       >
         Back to listings
       </Button>
-      
+
       <Grid container spacing={3}>
         {/* Product Images */}
         <Grid item xs={12} md={8}>
@@ -191,7 +201,7 @@ const ProductDetails = () => {
               ))}
             </Swiper>
           </Paper>
-          
+
           {/* Product Description */}
           <Paper elevation={2} sx={{ p: 3, mt: 3, borderRadius: 2 }}>
             <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -200,7 +210,7 @@ const ProductDetails = () => {
             <Typography variant="body1" paragraph>
               {product.description}
             </Typography>
-            
+
             <Grid container spacing={2} sx={{ mt: 2 }}>
               <Grid item xs={6} sm={4}>
                 <Typography variant="subtitle2" color="text.secondary">
@@ -229,7 +239,7 @@ const ProductDetails = () => {
             </Grid>
           </Paper>
         </Grid>
-        
+
         {/* Product Details and Actions */}
         <Grid item xs={12} md={4}>
           <Stack spacing={3}>
@@ -238,25 +248,25 @@ const ProductDetails = () => {
               <Typography variant="h5" gutterBottom fontWeight="bold">
                 {product.title}
               </Typography>
-              
+
               <Typography variant="h4" color="primary" fontWeight="bold" sx={{ my: 2 }}>
                 {product.price} TND
               </Typography>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <LocationOn color="action" fontSize="small" sx={{ mr: 1 }} />
                 <Typography variant="body2">{product.location}</Typography>
               </Box>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <AccessTime color="action" fontSize="small" sx={{ mr: 1 }} />
                 <Typography variant="body2">
                   {formatDistanceToNow(new Date(product.createdAt), { addSuffix: true })}
                 </Typography>
               </Box>
-              
+
               <Divider sx={{ my: 2 }} />
-              
+
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                 <Button
                   variant="contained"
@@ -267,14 +277,14 @@ const ProductDetails = () => {
                 >
                   Contact Seller
                 </Button>
-                <IconButton 
+                <IconButton
                   color={isFavorite ? 'primary' : 'default'}
                   onClick={handleToggleFavorite}
                   sx={{ border: 1, borderColor: 'divider' }}
                 >
                   {isFavorite ? <Favorite /> : <FavoriteBorder />}
                 </IconButton>
-                <IconButton 
+                <IconButton
                   onClick={handleShare}
                   sx={{ border: 1, borderColor: 'divider' }}
                 >
@@ -282,13 +292,13 @@ const ProductDetails = () => {
                 </IconButton>
               </Box>
             </Paper>
-            
+
             {/* Seller Info */}
             <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom fontWeight="bold">
                 Seller Information
               </Typography>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar
                   src={product.seller.avatar}
@@ -312,30 +322,39 @@ const ProductDetails = () => {
                   </Box>
                 </Box>
               </Box>
-              
+
               <Divider sx={{ my: 2 }} />
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Person fontSize="small" sx={{ mr: 1 }} />
                 <Typography variant="body2">
                   Member since {product.seller.memberSince}
                 </Typography>
               </Box>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Chat fontSize="small" sx={{ mr: 1 }} />
                 <Typography variant="body2">
                   Response rate: {product.seller.responseRate}
                 </Typography>
               </Box>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <AccessTime fontSize="small" sx={{ mr: 1 }} />
                 <Typography variant="body2">
                   Response time: {product.seller.responseTime}
                 </Typography>
               </Box>
-              
+
+              {product.seller.phone && (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Phone fontSize="small" sx={{ mr: 1 }} />
+                  <Typography variant="body2">
+                    Phone: {product.seller.phone}
+                  </Typography>
+                </Box>
+              )}
+
               <Button
                 variant="outlined"
                 fullWidth
@@ -346,7 +365,7 @@ const ProductDetails = () => {
                 Message Seller
               </Button>
             </Paper>
-            
+
             {/* Safety Tips */}
             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'info.lightest' }}>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -370,7 +389,7 @@ const ProductDetails = () => {
                 Learn more
               </Button>
             </Paper>
-            
+
             <Button
               variant="text"
               color="error"
@@ -386,4 +405,4 @@ const ProductDetails = () => {
   );
 };
 
-export default ProductDetails; 
+export default ProductDetails;

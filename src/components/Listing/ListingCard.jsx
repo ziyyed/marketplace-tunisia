@@ -20,9 +20,9 @@ const ListingCard = ({ listing }) => {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    // Link to the new ProductDetails page for products, or use ListingDetail for service listings
-    if (listing.category === 'Electronics' || listing.category === 'Computers' || 
-        listing.category === 'Fashion' || listing.category === 'Gaming') {
+    // Navigate to ProductDetails for product categories, ListingDetail for service categories
+    if (listing.category === 'Electronics' || listing.category === 'Fashion' ||
+        listing.category === 'Home & Garden' || listing.category === 'Vehicles') {
       navigate(`/products/${listing._id}`);
     } else {
       navigate(`/listings/${listing._id}`);
@@ -48,7 +48,8 @@ const ListingCard = ({ listing }) => {
         <CardMedia
           component="img"
           height="200"
-          image={listing.images?.[0] || 'https://via.placeholder.com/300x200'}
+          image={listing.images?.[0]?.startsWith('http') ? listing.images[0] :
+                `http://${window.location.hostname}:5002${listing.images?.[0]}` || 'https://via.placeholder.com/300x200'}
           alt={listing.title}
         />
         <IconButton
@@ -111,4 +112,4 @@ const ListingCard = ({ listing }) => {
   );
 };
 
-export default ListingCard; 
+export default ListingCard;

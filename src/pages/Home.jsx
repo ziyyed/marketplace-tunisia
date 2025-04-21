@@ -35,13 +35,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 const categories = [
   { name: 'Electronics', icon: <Phone fontSize="large" />, color: '#2196f3' },
-  { name: 'Computers', icon: <Computer fontSize="large" />, color: '#4caf50' },
   { name: 'Home & Garden', icon: <HomeIcon fontSize="large" />, color: '#ff9800' },
   { name: 'Vehicles', icon: <DirectionsCar fontSize="large" />, color: '#f44336' },
   { name: 'Jobs', icon: <Work fontSize="large" />, color: '#9c27b0' },
   { name: 'Services', icon: <Build fontSize="large" />, color: '#607d8b' },
   { name: 'Fashion', icon: <ShoppingBag fontSize="large" />, color: '#e91e63' },
-  { name: 'Gaming', icon: <SportsEsports fontSize="large" />, color: '#00bcd4' },
 ];
 
 const HomePage = () => {
@@ -85,7 +83,7 @@ const HomePage = () => {
             size="large"
             startIcon={<AddCircle />}
             onClick={() => navigate('/listings/create')}
-            sx={{ 
+            sx={{
               borderRadius: 2,
               px: 4,
               py: 1.5,
@@ -102,7 +100,7 @@ const HomePage = () => {
             size="large"
             startIcon={<PersonAdd />}
             onClick={() => navigate('/register')}
-            sx={{ 
+            sx={{
               borderRadius: 2,
               px: 4,
               py: 1.5,
@@ -143,7 +141,7 @@ const HomePage = () => {
                 }}
                 onClick={() => navigate(`/search?category=${category.name}`)}
               >
-                <Box sx={{ 
+                <Box sx={{
                   color: category.color,
                   mb: 2,
                   '& svg': { fontSize: 40 }
@@ -234,4 +232,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage; 
+export default HomePage;

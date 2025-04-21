@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { 
-  Container, 
-  Grid, 
-  TextField, 
-  Select, 
-  MenuItem, 
-  Button, 
-  FormControl, 
+import {
+  Container,
+  Grid,
+  TextField,
+  Select,
+  MenuItem,
+  Button,
+  FormControl,
   InputLabel,
   Box,
   Typography,
@@ -67,34 +67,41 @@ const Search = () => {
   };
 
   const handleFilterChange = (name, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
+      // Clear condition filter when category is Services or Jobs
+      setFilters(prev => ({
+        ...prev,
+        [name]: value,
+        condition: ''
+      }));
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const categories = [
-    'Electronics', 
-    'Computers', 
-    'Home & Garden', 
-    'Vehicles', 
-    'Jobs', 
-    'Services', 
-    'Fashion', 
-    'Gaming'
+    'Electronics',
+    'Home & Garden',
+    'Vehicles',
+    'Jobs',
+    'Services',
+    'Fashion'
   ];
 
   const conditions = [
-    'New', 
-    'Used - Like New', 
-    'Used - Good', 
-    'Used - Fair', 
+    'New',
+    'Used - Like New',
+    'Used - Good',
+    'Used - Fair',
     'Used - Poor',
     'For Parts'
   ];
 
   const cities = [
-    'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana', 
+    'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
     'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine',
     'Nabeul', 'Hammamet'
   ];
@@ -123,7 +130,7 @@ const Search = () => {
               }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={3}>
             <FormControl fullWidth>
               <InputLabel>Category</InputLabel>
@@ -139,7 +146,7 @@ const Search = () => {
               </Select>
             </FormControl>
           </Grid>
-          
+
           <Grid item xs={6} md={2}>
             <TextField
               fullWidth
@@ -149,7 +156,7 @@ const Search = () => {
               onChange={(e) => handleFilterChange('minPrice', e.target.value)}
             />
           </Grid>
-          
+
           <Grid item xs={6} md={2}>
             <TextField
               fullWidth
@@ -159,11 +166,11 @@ const Search = () => {
               onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={1}>
-            <Button 
-              variant="contained" 
-              fullWidth 
+            <Button
+              variant="contained"
+              fullWidth
               onClick={handleSearch}
               sx={{ height: '56px' }}
               startIcon={<SearchIcon />}
@@ -178,21 +185,28 @@ const Search = () => {
             <Chip label="Additional Filters" icon={<FilterList />} />
           </Divider>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Condition</InputLabel>
-                <Select
-                  value={filters.condition}
-                  label="Condition"
-                  onChange={(e) => handleFilterChange('condition', e.target.value)}
-                >
-                  <MenuItem value="">Any Condition</MenuItem>
-                  {conditions.map(condition => (
-                    <MenuItem key={condition} value={condition}>{condition}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+            {filters.category !== 'Services' && filters.category !== 'Jobs' && (
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Condition</InputLabel>
+                  <Select
+                    value={filters.condition}
+                    label="Condition"
+                    onChange={(e) => handleFilterChange('condition', e.target.value)}
+                  >
+                    <MenuItem value="">Any Condition</MenuItem>
+                    {conditions.map(condition => (
+                      <MenuItem key={condition} value={condition}>{condition}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+            {(filters.category === 'Services' || filters.category === 'Jobs') && (
+              <Grid item xs={12} md={6}>
+                {/* Placeholder to maintain grid layout */}
+              </Grid>
+            )}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
                 <InputLabel>City</InputLabel>
@@ -217,37 +231,37 @@ const Search = () => {
         <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           <Typography variant="body2" sx={{ mr: 1 }}>Applied filters:</Typography>
           {filters.category && (
-            <Chip 
-              size="small" 
-              label={`Category: ${filters.category}`} 
+            <Chip
+              size="small"
+              label={`Category: ${filters.category}`}
               onDelete={() => handleFilterChange('category', '')}
             />
           )}
           {filters.condition && (
-            <Chip 
-              size="small" 
-              label={`Condition: ${filters.condition}`} 
+            <Chip
+              size="small"
+              label={`Condition: ${filters.condition}`}
               onDelete={() => handleFilterChange('condition', '')}
             />
           )}
           {filters.city && (
-            <Chip 
-              size="small" 
-              label={`Location: ${filters.city}`} 
+            <Chip
+              size="small"
+              label={`Location: ${filters.city}`}
               onDelete={() => handleFilterChange('city', '')}
             />
           )}
           {filters.minPrice && (
-            <Chip 
-              size="small" 
-              label={`Min Price: ${filters.minPrice} TND`} 
+            <Chip
+              size="small"
+              label={`Min Price: ${filters.minPrice} TND`}
               onDelete={() => handleFilterChange('minPrice', '')}
             />
           )}
           {filters.maxPrice && (
-            <Chip 
-              size="small" 
-              label={`Max Price: ${filters.maxPrice} TND`} 
+            <Chip
+              size="small"
+              label={`Max Price: ${filters.maxPrice} TND`}
               onDelete={() => handleFilterChange('maxPrice', '')}
             />
           )}

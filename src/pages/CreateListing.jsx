@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Typography, 
-  Button, 
-  Box, 
-  Grid, 
+import {
+  Container,
+  Typography,
+  Button,
+  Box,
+  Grid,
   Paper,
   FormControl,
   InputLabel,
@@ -28,14 +28,12 @@ import {
 } from '@mui/icons-material';
 
 const categories = [
-  'Electronics', 
-  'Computers', 
+  'Electronics',
   'Home & Garden',
   'Vehicles',
   'Jobs',
   'Services',
-  'Fashion',
-  'Gaming'
+  'Fashion'
 ];
 
 const conditions = [
@@ -48,8 +46,8 @@ const conditions = [
 ];
 
 const cities = [
-  'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana', 
-  'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine', 
+  'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
+  'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine',
   'Nabeul', 'Hammamet', 'Tataouine', 'Béja', 'Jendouba', 'El Kef', 'Mahdia',
   'Sidi Bouzid', 'Tozeur', 'Siliana', 'Zaghouan', 'Kébili'
 ];
@@ -74,72 +72,81 @@ const CreateListing = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+
+    if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
+      setFormData({
+        ...formData,
+        [name]: value,
+        condition: 'Not Applicable'
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
     setImageError('');
-    
+
     if (files.length > 10 || images.length + files.length > 10) {
       setImageError('Maximum 10 images allowed');
       return;
     }
-    
+
     const newImageFiles = [...imageFiles];
     const newImageUrls = [...images];
-    
+
     files.forEach(file => {
       if (file.size > 5 * 1024 * 1024) {
         setImageError('Each image must be less than 5MB');
         return;
       }
-      
+
       if (!file.type.match('image.*')) {
         setImageError('Only image files are allowed');
         return;
       }
-      
+
       newImageFiles.push(file);
       const imageUrl = URL.createObjectURL(file);
       newImageUrls.push(imageUrl);
     });
-    
+
     setImageFiles(newImageFiles);
     setImages(newImageUrls);
   };
-  
+
   const removeImage = (index) => {
     const newImages = [...images];
     const newImageFiles = [...imageFiles];
-    
+
     URL.revokeObjectURL(newImages[index]);
     newImages.splice(index, 1);
     newImageFiles.splice(index, 1);
-    
+
     setImages(newImages);
     setImageFiles(newImageFiles);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast.error('Please log in to create a listing');
       navigate('/login');
       return;
     }
-    
+
     if (images.length === 0) {
       setImageError('At least one image is required');
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Create FormData
       const data = new FormData();
@@ -149,20 +156,20 @@ const CreateListing = () => {
       data.append('category', formData.category);
       data.append('condition', formData.condition);
       data.append('location', formData.location);
-      
+
       if (formData.neighborhood) {
         data.append('neighborhood', formData.neighborhood);
       }
-      
+
       if (formData.phone) {
         data.append('phone', formData.phone);
       }
-      
+
       // Add all images
       imageFiles.forEach(file => {
         data.append('images', file);
       });
-      
+
       console.log('Submitting listing with data:', {
         title: formData.title,
         price: formData.price,
@@ -170,13 +177,13 @@ const CreateListing = () => {
         location: formData.location,
         imageCount: imageFiles.length
       });
-      
+
       // Get token from local storage
       const token = localStorage.getItem('token');
-      
-      // Make API request
+
+      // Make API request using the api service
       const response = await axios.post(
-        'http://localhost:5003/api/listings',
+        `http://${window.location.hostname}:5002/api/listings`,
         data,
         {
           headers: {
@@ -185,7 +192,7 @@ const CreateListing = () => {
           }
         }
       );
-      
+
       console.log('Listing created successfully:', response.data);
       toast.success('Listing created successfully!');
       navigate('/');
@@ -206,7 +213,7 @@ const CreateListing = () => {
         <Typography variant="body1" color="text.secondary" paragraph>
           Fill in the details below to create your listing.
         </Typography>
-        
+
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <Grid container spacing={3}>
             {/* Basic Information */}
@@ -221,7 +228,7 @@ const CreateListing = () => {
                 placeholder="What are you selling?"
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required>
                 <InputLabel>Category</InputLabel>
@@ -239,25 +246,30 @@ const CreateListing = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Condition</InputLabel>
-                <Select
-                  name="condition"
-                  value={formData.condition}
-                  onChange={handleChange}
-                  label="Condition"
-                >
-                  {conditions.map((condition) => (
-                    <MenuItem key={condition} value={condition}>
-                      {condition}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            
+
+            {formData.category !== 'Services' && formData.category !== 'Jobs' && (
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Condition</InputLabel>
+                  <Select
+                    name="condition"
+                    value={formData.condition}
+                    onChange={handleChange}
+                    label="Condition"
+                  >
+                    {conditions.map((condition) => (
+                      <MenuItem key={condition} value={condition}>
+                        {condition}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+            {(formData.category === 'Services' || formData.category === 'Jobs') && (
+              <input type="hidden" name="condition" value="Not Applicable" />
+            )}
+
             <Grid item xs={12}>
               <TextField
                 required
@@ -271,7 +283,7 @@ const CreateListing = () => {
                 placeholder="Describe your item in detail"
               />
             </Grid>
-            
+
             {/* Price & Location */}
             <Grid item xs={12} sm={6}>
               <TextField
@@ -287,7 +299,7 @@ const CreateListing = () => {
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -301,7 +313,7 @@ const CreateListing = () => {
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required>
                 <InputLabel>City</InputLabel>
@@ -319,7 +331,7 @@ const CreateListing = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -330,13 +342,13 @@ const CreateListing = () => {
                 placeholder="Your neighborhood"
               />
             </Grid>
-            
+
             {/* Image Upload */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
                 Upload Images
               </Typography>
-              
+
               <Button
                 variant="outlined"
                 component="label"
@@ -352,13 +364,13 @@ const CreateListing = () => {
                   onChange={handleImageUpload}
                 />
               </Button>
-              
+
               {imageError && (
                 <Typography color="error" variant="body2" sx={{ ml: 2 }}>
                   {imageError}
                 </Typography>
               )}
-              
+
               <Grid container spacing={2} sx={{ mt: 1 }}>
                 {images.map((image, index) => (
                   <Grid item xs={6} sm={4} md={3} key={index}>
@@ -404,7 +416,7 @@ const CreateListing = () => {
                 ))}
               </Grid>
             </Grid>
-            
+
             {/* Submit Button */}
             <Grid item xs={12}>
               <Button
@@ -427,4 +439,4 @@ const CreateListing = () => {
   );
 };
 
-export default CreateListing; 
+export default CreateListing;

@@ -9,13 +9,38 @@ const router = express.Router();
 // IMPORTANT: Order of routes matters!
 // 1. First, specific routes with static paths
 
+// Get listings by user ID - must be before /:id to avoid being interpreted as an ID
+router.get('/user/:userId', async (req, res) => {
+  try {
+    console.log(`Getting listings for user: ${req.params.userId}`);
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    const listings = await Listing.find({
+      user: req.params.userId,
+      status: 'active'
+    })
+    .sort({ createdAt: -1 })
+    .populate('user', 'name avatar')
+    .exec();
+
+    console.log(`Found ${listings.length} listings for user`);
+    res.json(listings);
+  } catch (error) {
+    console.error('Error fetching user listings:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Search listings - must be before /:id to avoid being interpreted as an ID
 router.get('/search', async (req, res) => {
   try {
     console.log('Search request received with query:', req.query);
     const { query, category, minPrice, maxPrice, condition, city, sort } = req.query;
     const searchQuery = {};
-    
+
     // Build the search query with all possible filters
     if (query) {
       searchQuery.$or = [
@@ -23,28 +48,28 @@ router.get('/search', async (req, res) => {
         { description: { $regex: query, $options: 'i' } }
       ];
     }
-    
+
     if (category) {
       searchQuery.category = category;
     }
-    
+
     if (condition) {
       searchQuery.condition = condition;
     }
-    
+
     if (city) {
       searchQuery.location = city;
     }
-    
+
     if (minPrice || maxPrice) {
       searchQuery.price = {};
       if (minPrice) searchQuery.price.$gte = Number(minPrice);
       if (maxPrice) searchQuery.price.$lte = Number(maxPrice);
     }
-    
+
     // Default sorting by newest
     let sortOption = { createdAt: -1 };
-    
+
     if (sort) {
       switch (sort) {
         case 'price_asc':
@@ -61,13 +86,13 @@ router.get('/search', async (req, res) => {
           break;
       }
     }
-    
+
     // Query the database
     const listings = await Listing.find(searchQuery)
       .sort(sortOption)
       .populate('user', 'name avatar')
       .exec();
-      
+
     console.log(`Found ${listings.length} listings matching query`);
     res.json(listings);
   } catch (error) {
@@ -84,10 +109,10 @@ router.post('/', auth, async (req, res) => {
     console.log('Auth user:', req.user?._id || 'Not authenticated');
     console.log('Request body keys:', Object.keys(req.body));
     console.log('Request files:', req.files?.length || 'No files');
-    
+
     // Get data from the request
     const { title, description, price, category, condition, location } = req.body;
-    
+
     // Print values to verify
     console.log('Title:', title);
     console.log('Description:', description?.substring(0, 30) + '...');
@@ -95,7 +120,7 @@ router.post('/', auth, async (req, res) => {
     console.log('Category:', category);
     console.log('Condition:', condition || 'Not provided');
     console.log('Location:', location);
-    
+
     // Basic validation
     if (!title) {
       console.log('VALIDATION ERROR: Missing title');
@@ -117,14 +142,14 @@ router.post('/', auth, async (req, res) => {
       console.log('VALIDATION ERROR: Missing location');
       return res.status(400).json({ message: 'Location is required' });
     }
-    
+
     // Process uploaded files (if any)
     const imageUrls = [];
     if (req.files && req.files.length > 0) {
       console.log(`Processing ${req.files.length} images`);
       req.files.forEach((file) => {
-        // For now, use placeholder images since we're not saving the files permanently
-        const imageUrl = `https://placehold.co/600x400?text=${encodeURIComponent(title)}`;
+        // Save the file path to the database
+        const imageUrl = `/uploads/${file.filename}`;
         imageUrls.push(imageUrl);
       });
     } else {
@@ -132,7 +157,7 @@ router.post('/', auth, async (req, res) => {
       console.log('No images uploaded, using default placeholder');
       imageUrls.push(`https://placehold.co/600x400?text=${encodeURIComponent(title)}`);
     }
-    
+
     // Create a new listing document
     const newListing = new Listing({
       title,
@@ -144,19 +169,19 @@ router.post('/', auth, async (req, res) => {
       images: imageUrls,
       user: req.user._id
     });
-    
+
     console.log('Saving listing to database...');
     const savedListing = await newListing.save();
     console.log('Listing saved with ID:', savedListing._id);
-    
+
     // Add the listing to the user's listings array
     await User.findByIdAndUpdate(
-      req.user._id, 
+      req.user._id,
       { $push: { listings: savedListing._id } },
       { new: true }
     );
     console.log('Updated user document with new listing reference');
-    
+
     // Return success response with the created listing
     res.status(201).json({
       message: 'Listing created successfully',
@@ -176,7 +201,7 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1 })
       .populate('user', 'name avatar')
       .exec();
-      
+
     console.log(`Found ${listings.length} listings`);
     res.json(listings);
   } catch (error) {
@@ -191,15 +216,15 @@ router.get('/:id', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid listing ID' });
     }
-    
+
     const listing = await Listing.findById(req.params.id)
       .populate('user', 'name avatar')
       .exec();
-      
+
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found' });
     }
-    
+
     res.json(listing);
   } catch (error) {
     console.error('Error fetching listing:', error);
