@@ -11,6 +11,8 @@ import {
   Button,
   useTheme,
   Paper,
+  Chip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Phone,
@@ -28,18 +30,19 @@ import {
   Sell,
   Favorite,
   Category,
+  Star,
 } from '@mui/icons-material';
 import { listings } from '../services/api';
 import ListingCard from '../components/Listing/ListingCard';
 import { useAuth } from '../contexts/AuthContext';
 
 const categories = [
-  { name: 'Electronics', icon: <Phone fontSize="large" />, color: '#2196f3' },
-  { name: 'Home & Garden', icon: <HomeIcon fontSize="large" />, color: '#ff9800' },
-  { name: 'Vehicles', icon: <DirectionsCar fontSize="large" />, color: '#f44336' },
-  { name: 'Jobs', icon: <Work fontSize="large" />, color: '#9c27b0' },
-  { name: 'Services', icon: <Build fontSize="large" />, color: '#607d8b' },
-  { name: 'Fashion', icon: <ShoppingBag fontSize="large" />, color: '#e91e63' },
+  { name: 'Electronics', icon: <Phone fontSize="medium" />, color: '#2196f3' },
+  { name: 'Home & Garden', icon: <HomeIcon fontSize="medium" />, color: '#ff9800' },
+  { name: 'Vehicles', icon: <DirectionsCar fontSize="medium" />, color: '#f44336' },
+  { name: 'Jobs', icon: <Work fontSize="medium" />, color: '#9c27b0' },
+  { name: 'Services', icon: <Build fontSize="medium" />, color: '#607d8b' },
+  { name: 'Fashion', icon: <ShoppingBag fontSize="medium" />, color: '#e91e63' },
 ];
 
 const HomePage = () => {
@@ -48,8 +51,21 @@ const HomePage = () => {
   const { isAuthenticated } = useAuth();
 
   const { data: featuredListings, isLoading } = useQuery({
-    queryKey: ['featuredListings'],
-    queryFn: () => listings.getAll(),
+    queryKey: ['topRatedListings'],
+    queryFn: async () => {
+      // Get all listings
+      const allListings = await listings.getAll();
+
+      // Sort by rating (highest first)
+      const sortedListings = [...allListings].sort((a, b) => {
+        const ratingA = a.rating || 0;
+        const ratingB = b.rating || 0;
+        return ratingB - ratingA;
+      });
+
+      // Return top rated listings
+      return sortedListings.slice(0, 8);
+    },
   });
 
   return (
@@ -114,66 +130,93 @@ const HomePage = () => {
       </Paper>
 
       {/* Categories */}
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Category sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Category sx={{ mr: 1, color: 'primary.main', fontSize: 24 }} />
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
             Popular Categories
           </Typography>
         </Box>
-        <Grid container spacing={2}>
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          overflowX: 'auto',
+          pb: 1,
+          '&::-webkit-scrollbar': {
+            height: '6px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0,0,0,0.2)',
+            borderRadius: '6px',
+          }
+        }}>
           {categories.map((category) => (
-            <Grid item xs={6} sm={4} md={3} key={category.name}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  p: 3,
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6,
-                  },
-                }}
-                onClick={() => navigate(`/search?category=${category.name}`)}
-              >
-                <Box sx={{
-                  color: category.color,
-                  mb: 2,
-                  '& svg': { fontSize: 40 }
-                }}>
-                  {category.icon}
-                </Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                  {category.name}
-                </Typography>
-              </Card>
-            </Grid>
+            <Card
+              key={category.name}
+              sx={{
+                minWidth: '110px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                p: 1.5,
+                mx: 0.5,
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 3,
+                },
+              }}
+              onClick={() => navigate(`/search?category=${category.name}`)}
+            >
+              <Box sx={{
+                color: category.color,
+                mb: 1,
+                '& svg': { fontSize: 28 }
+              }}>
+                {category.icon}
+              </Box>
+              <Typography variant="body2" sx={{ fontWeight: 'medium', textAlign: 'center' }}>
+                {category.name}
+              </Typography>
+            </Card>
           ))}
-        </Grid>
+        </Box>
       </Box>
 
-      {/* Featured Listings */}
+      {/* Most Wanted Products */}
       <Box sx={{ mb: 6 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Favorite sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />
+          <Star sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />
           <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-            Featured Listings
+            Most Wanted Products
           </Typography>
+          <Chip
+            label="Top Rated"
+            color="primary"
+            size="small"
+            sx={{ ml: 1, borderRadius: 2 }}
+          />
         </Box>
         {isLoading ? (
-          <Typography>Loading...</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
         ) : (
           <Grid container spacing={3}>
-            {featuredListings?.data?.slice(0, 8).map((listing) => (
+            {featuredListings?.slice(0, 8).map((listing) => (
               <Grid item xs={12} sm={6} md={3} key={listing._id}>
-                <ListingCard listing={listing} />
+                <ListingCard listing={listing} showRating={true} />
               </Grid>
             ))}
+            {(!featuredListings || featuredListings.length === 0) && (
+              <Box sx={{ width: '100%', textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">
+                  No top-rated products available yet
+                </Typography>
+              </Box>
+            )}
           </Grid>
         )}
       </Box>

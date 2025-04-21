@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { listings } from '../services/api';
 import ListingCard from '../components/Listing/ListingCard';
 import { Search as SearchIcon, FilterList } from '@mui/icons-material';
+import { tunisianLocations } from '../utils/locationData';
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -100,11 +101,12 @@ const Search = () => {
     'For Parts'
   ];
 
-  const cities = [
-    'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
-    'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine',
-    'Nabeul', 'Hammamet'
-  ];
+  // Use the standardized list of Tunisian locations
+  // const cities = [
+  //   'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
+  //   'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine',
+  //   'Nabeul', 'Hammamet'
+  // ];
 
   // Prepare data for display
   const listingsData = searchResults || [];
@@ -216,8 +218,8 @@ const Search = () => {
                   onChange={(e) => handleFilterChange('city', e.target.value)}
                 >
                   <MenuItem value="">Any Location</MenuItem>
-                  {cities.map(city => (
-                    <MenuItem key={city} value={city}>{city}</MenuItem>
+                  {tunisianLocations.map(location => (
+                    <MenuItem key={location} value={location}>{location}</MenuItem>
                   ))}
                 </Select>
               </FormControl>

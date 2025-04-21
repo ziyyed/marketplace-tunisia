@@ -17,27 +17,33 @@ const storage = multer.diskStorage({
   destination: function(req, file, cb) {
     // Ensure directory exists
     const uploadsDir = path.join(__dirname, '..', 'uploads', 'avatars');
+    console.log('Avatar upload directory:', uploadsDir);
     if (!fs.existsSync(uploadsDir)) {
+      console.log('Creating avatar directory:', uploadsDir);
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
     cb(null, uploadsDir);
   },
   filename: function(req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+    const filename = 'avatar-' + uniqueSuffix + path.extname(file.originalname);
+    console.log('Generated filename for avatar:', filename);
+    cb(null, filename);
   }
 });
 
 const upload = multer({
   storage,
   limits: {
-    fileSize: 2 * 1024 * 1024 // 2MB
+    fileSize: 5 * 1024 * 1024 // 5MB
   },
   fileFilter: function(req, file, cb) {
     // Accept only images
-    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
+      console.log('File type rejected:', file.originalname);
       return cb(new Error('Only image files are allowed!'), false);
     }
+    console.log('File type accepted:', file.originalname);
     cb(null, true);
   }
 });
@@ -73,9 +79,17 @@ router.put('/profile', verifyToken, async (req, res) => {
     // Update fields if provided
     if (name) user.name = name;
     if (email) user.email = email;
-    if (location) user.location = location;
-    if (phone) user.phone = phone;
-    if (bio) user.bio = bio;
+    if (location !== undefined) user.location = location;
+    if (phone !== undefined) user.phone = phone;
+    if (bio !== undefined) user.bio = bio;
+
+    console.log('Updated user data:', {
+      name: user.name,
+      email: user.email,
+      bio: user.bio,
+      location: user.location,
+      phone: user.phone
+    });
 
     await user.save();
     console.log('User profile updated successfully');
@@ -85,36 +99,59 @@ router.put('/profile', verifyToken, async (req, res) => {
     res.json(updatedUser);
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Error updating profile' });
+    res.status(500).json({ message: 'Error updating profile: ' + error.message });
   }
 });
 
 // Update user avatar
-router.put('/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
+router.put('/avatar', verifyToken, async (req, res) => {
   try {
     console.log('Updating avatar for user:', req.user._id);
 
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image uploaded' });
-    }
+    // Use multer middleware manually to handle file upload
+    upload.single('avatar')(req, res, async (err) => {
+      if (err) {
+        console.error('Multer error:', err);
+        return res.status(400).json({ message: 'Error uploading file: ' + err.message });
+      }
 
-    // Find user
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+      console.log('Request file after multer:', req.file ? 'Present' : 'Missing');
 
-    // Update avatar path
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
-    user.avatar = avatarUrl;
+      if (!req.file) {
+        return res.status(400).json({ message: 'No image uploaded' });
+      }
 
-    await user.save();
-    console.log('User avatar updated successfully');
+      console.log('File details:', {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        path: req.file.path
+      });
 
-    res.json({ message: 'Avatar updated successfully', avatar: avatarUrl });
+      try {
+        // Find user
+        const user = await User.findById(req.user._id);
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Update avatar path
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        user.avatar = avatarUrl;
+
+        await user.save();
+        console.log('User avatar updated successfully with URL:', avatarUrl);
+
+        res.json({ message: 'Avatar updated successfully', avatar: avatarUrl });
+      } catch (error) {
+        console.error('User update error:', error);
+        res.status(500).json({ message: 'Error updating user: ' + error.message });
+      }
+    });
   } catch (error) {
     console.error('Update avatar error:', error);
-    res.status(500).json({ message: 'Error updating avatar' });
+    res.status(500).json({ message: 'Error updating avatar: ' + error.message });
   }
 });
 

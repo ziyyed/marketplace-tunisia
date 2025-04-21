@@ -148,6 +148,16 @@ const listings = {
     }
   },
   getFavorites: () => api.get('/listings/favorites'),
+  rateListing: async (id, rating) => {
+    try {
+      console.log(`Rating listing ${id} with ${rating} stars`);
+      const response = await api.post(`/listings/${id}/rate`, { rating });
+      return response.data;
+    } catch (error) {
+      console.error(`Error rating listing ${id}:`, error);
+      throw error;
+    }
+  },
 };
 
 // Users API

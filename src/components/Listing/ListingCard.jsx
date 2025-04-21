@@ -16,7 +16,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
-const ListingCard = ({ listing }) => {
+const ListingCard = ({ listing, showRating = false }) => {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
@@ -100,12 +100,22 @@ const ListingCard = ({ listing }) => {
           <Typography variant="caption" color="text.secondary">
             Posted {format(new Date(listing.createdAt), 'MMM d, yyyy')}
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Rating value={listing.seller?.rating || 0} size="small" readOnly />
-            <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-              ({listing.seller?.ratingCount || 0})
-            </Typography>
-          </Box>
+
+          {showRating ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: '#f5f5f5', px: 1, py: 0.5, borderRadius: 1 }}>
+              <Rating value={listing.rating || 0} precision={0.5} size="small" readOnly />
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5, fontWeight: 'bold' }}>
+                {listing.rating ? listing.rating.toFixed(1) : 'New'}
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Rating value={listing.seller?.rating || 0} size="small" readOnly />
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                ({listing.seller?.ratingCount || 0})
+              </Typography>
+            </Box>
+          )}
         </Box>
       </CardContent>
     </Card>

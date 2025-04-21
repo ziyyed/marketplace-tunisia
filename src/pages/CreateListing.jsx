@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import { tunisianLocations } from '../utils/locationData';
 import {
   AddPhotoAlternate,
   Delete,
@@ -45,12 +46,13 @@ const conditions = [
   'For Parts'
 ];
 
-const cities = [
-  'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
-  'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine',
-  'Nabeul', 'Hammamet', 'Tataouine', 'Béja', 'Jendouba', 'El Kef', 'Mahdia',
-  'Sidi Bouzid', 'Tozeur', 'Siliana', 'Zaghouan', 'Kébili'
-];
+// Use the standardized list of Tunisian locations
+// const cities = [
+//   'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
+//   'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine',
+//   'Nabeul', 'Hammamet', 'Tataouine', 'Béja', 'Jendouba', 'El Kef', 'Mahdia',
+//   'Sidi Bouzid', 'Tozeur', 'Siliana', 'Zaghouan', 'Kébili'
+// ];
 
 const CreateListing = () => {
   const navigate = useNavigate();
@@ -323,9 +325,9 @@ const CreateListing = () => {
                   onChange={handleChange}
                   label="City"
                 >
-                  {cities.map((city) => (
-                    <MenuItem key={city} value={city}>
-                      {city}
+                  {tunisianLocations.map((location) => (
+                    <MenuItem key={location} value={location}>
+                      {location}
                     </MenuItem>
                   ))}
                 </Select>

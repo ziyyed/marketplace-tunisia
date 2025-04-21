@@ -33,35 +33,46 @@ router.post('/register', async (req, res) => {
       phone: phone || ''
     });
 
-    // Save the user to MongoDB
-    await newUser.save();
-    
-    console.log('New user registered:', newUser._id);
-    
-    // Create token
-    const token = jwt.sign(
-      { userId: newUser._id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
+    console.log('Attempting to save new user to database...');
 
-    // Return user data without password
-    const userToReturn = {
-      _id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      avatar: newUser.avatar,
-      location: newUser.location,
-      phone: newUser.phone
-    };
-    
-    res.status(201).json({
-      token,
-      user: userToReturn
-    });
+    try {
+      // Save the user to MongoDB
+      const savedUser = await newUser.save();
+      console.log('New user registered successfully with ID:', savedUser._id);
+      console.log('User data saved:', {
+        id: savedUser._id,
+        name: savedUser.name,
+        email: savedUser.email
+      });
+
+      // Create token
+      const token = jwt.sign(
+        { userId: savedUser._id },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
+      );
+
+      // Return user data without password
+      const userToReturn = {
+        _id: savedUser._id,
+        name: savedUser.name,
+        email: savedUser.email,
+        avatar: savedUser.avatar,
+        location: savedUser.location,
+        phone: savedUser.phone
+      };
+
+      res.status(201).json({
+        token,
+        user: userToReturn
+      });
+    } catch (saveError) {
+      console.error('Error saving user to database:', saveError);
+      return res.status(500).json({ message: 'Error saving user to database', error: saveError.message });
+    }
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Error creating user' });
+    res.status(500).json({ message: 'Error creating user', error: error.message });
   }
 });
 
@@ -108,7 +119,7 @@ router.post('/login', async (req, res) => {
       location: user.location,
       phone: user.phone
     };
-    
+
     res.json({
       token,
       user: userToReturn
@@ -124,12 +135,12 @@ export const verifyToken = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     console.log('Auth header received:', authHeader);
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('Auth verification failed: No token provided');
       return res.status(401).json({ message: 'No token provided' });
     }
-    
+
     const token = authHeader.split(' ')[1];
     console.log('Token received:', token.substring(0, 15) + '...');
 
@@ -152,7 +163,7 @@ export const verifyToken = (req, res, next) => {
 router.get('/verify', verifyToken, async (req, res) => {
   try {
     console.log('Verifying user:', req.user._id);
-    
+
     // Find user by ID from token
     const user = await User.findById(req.user._id).select('-password');
     if (!user) {
@@ -168,4 +179,4 @@ router.get('/verify', verifyToken, async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

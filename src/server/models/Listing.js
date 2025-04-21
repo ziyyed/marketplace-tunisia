@@ -65,6 +65,30 @@ const listingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  rating: {
+    type: Number,
+    default: 0
+  },
+  ratingCount: {
+    type: Number,
+    default: 0
+  },
+  ratings: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    value: {
+      type: Number,
+      required: true,
+      min: 0.5,
+      max: 5
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   favorites: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -73,4 +97,4 @@ const listingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-export default mongoose.model('Listing', listingSchema); 
+export default mongoose.model('Listing', listingSchema);

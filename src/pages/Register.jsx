@@ -10,6 +10,11 @@ import {
   Alert,
   Paper,
   InputAdornment,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  FormHelperText,
 } from '@mui/material';
 import {
   Person,
@@ -21,6 +26,7 @@ import {
   ArrowBack,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { tunisianLocations } from '../utils/locationData';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -239,27 +245,37 @@ const Register = () => {
               helperText={errors.confirmPassword}
               error={!!errors.confirmPassword}
             />
-            <TextField
-              margin="normal"
-              required
+            <FormControl
               fullWidth
-              name="location"
-              label="Location"
-              id="location"
-              autoComplete="address-level2"
-              value={formData.location}
-              onChange={handleChange}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LocationOn color="primary" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 2 }}
-              helperText={errors.location}
+              margin="normal"
               error={!!errors.location}
-            />
+              sx={{ mb: 2 }}
+            >
+              <InputLabel id="location-label">
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <LocationOn color="primary" sx={{ mr: 1 }} />
+                  Location
+                </Box>
+              </InputLabel>
+              <Select
+                labelId="location-label"
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                label="Location"
+                required
+              >
+                {tunisianLocations.map((location) => (
+                  <MenuItem key={location} value={location}>
+                    {location}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.location && (
+                <FormHelperText>{errors.location}</FormHelperText>
+              )}
+            </FormControl>
             <TextField
               margin="normal"
               required

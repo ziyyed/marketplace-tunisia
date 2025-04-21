@@ -47,6 +47,9 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingHover, setRatingHover] = useState(-1);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -66,6 +69,9 @@ const ProductDetails = () => {
           category: response.data.category,
           condition: response.data.condition,
           location: response.data.location,
+          rating: response.data.rating || 0,
+          ratingCount: response.data.ratingCount || 0,
+          ratings: response.data.ratings || [],
           images: response.data.images.map(img => {
             if (img.startsWith('http')) return img;
             const hostname = window.location.hostname;
@@ -93,6 +99,15 @@ const ProductDetails = () => {
 
         setProduct(productData);
         setIsFavorite(false); // Default to not favorited
+
+        // Check if the current user has already rated this product
+        if (user && response.data.ratings) {
+          const userRating = response.data.ratings.find(r => r.user === user._id);
+          if (userRating) {
+            setUserRating(userRating.value);
+            setRatingSubmitted(true);
+          }
+        }
       } catch (err) {
         setError('Failed to load product details');
         console.error(err);
@@ -102,7 +117,7 @@ const ProductDetails = () => {
     };
 
     fetchProduct();
-  }, [id]);
+  }, [id, user]);
 
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
@@ -122,6 +137,52 @@ const ProductDetails = () => {
     navigator.clipboard.writeText(window.location.href);
     // Show toast notification
     alert('Link copied to clipboard');
+  };
+
+  const handleRatingChange = async (event, newValue) => {
+    if (!user) {
+      navigate('/login', { state: { from: `/products/${id}` } });
+      return;
+    }
+
+    // Check if the current user is the owner of the product
+    if (product.seller.id === user._id) {
+      alert('You cannot rate your own product!');
+      return;
+    }
+
+    setUserRating(newValue);
+
+    try {
+      // Send the rating to the server
+      console.log(`Submitting rating ${newValue} for product ${id}`);
+
+      setLoading(true);
+
+      // Import the listings API
+      const { listings } = await import('../services/api');
+
+      // Call the API to rate the listing
+      const response = await listings.rateListing(id, newValue);
+      console.log('Rating response:', response);
+
+      // Update the product's rating in the UI with the new average from the server
+      setProduct(prev => ({
+        ...prev,
+        rating: response.rating,
+        ratingCount: response.ratingCount
+      }));
+
+      setRatingSubmitted(true);
+      setLoading(false);
+
+      // Show success message
+      alert('Thank you for your rating!');
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      alert('Failed to submit rating. Please try again.');
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -252,6 +313,27 @@ const ProductDetails = () => {
               <Typography variant="h4" color="primary" fontWeight="bold" sx={{ my: 2 }}>
                 {product.price} TND
               </Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Rating
+                  value={product.rating || 0}
+                  precision={0.5}
+                  size="medium"
+                  readOnly
+                />
+                <Typography variant="body2" sx={{ ml: 1 }}>
+                  {product.rating ? `${product.rating.toFixed(1)} / 5` : 'No ratings yet'}
+                </Typography>
+                {product.ratingCount > 0 && (
+                  <Chip
+                    label={`${product.ratingCount} ${product.ratingCount === 1 ? 'review' : 'reviews'}`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{ ml: 1, borderRadius: 1 }}
+                  />
+                )}
+              </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <LocationOn color="action" fontSize="small" sx={{ mr: 1 }} />
@@ -389,6 +471,67 @@ const ProductDetails = () => {
                 Learn more
               </Button>
             </Paper>
+
+            {/* User Rating - Only show if user is not the owner */}
+            {user && product.seller.id !== user._id ? (
+              <Paper elevation={2} sx={{ p: 3, borderRadius: 2, mb: 2 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Rate This Product
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column', gap: 1 }}>
+                  <Rating
+                    name="product-rating"
+                    value={userRating}
+                    precision={0.5}
+                    size="large"
+                    onChange={handleRatingChange}
+                    disabled={ratingSubmitted || loading}
+                    onChangeActive={(event, newHover) => {
+                      setRatingHover(newHover);
+                    }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    {ratingSubmitted
+                      ? 'Thank you for your rating!'
+                      : userRating > 0
+                        ? `You're rating this product ${ratingHover !== -1 ? ratingHover : userRating} out of 5 stars`
+                        : 'Click to rate this product'}
+                  </Typography>
+                </Box>
+              </Paper>
+            ) : user && product.seller.id === user._id ? (
+              <Paper elevation={2} sx={{ p: 3, borderRadius: 2, mb: 2, bgcolor: 'info.lightest' }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Product Ratings
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Rating
+                    value={product.rating || 0}
+                    precision={0.5}
+                    size="large"
+                    readOnly
+                  />
+                  <Typography variant="body1" fontWeight="medium">
+                    {product.rating ? product.rating.toFixed(1) : '0'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    ({product.ratingCount || 0} {product.ratingCount === 1 ? 'rating' : 'ratings'})
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  As the owner, you cannot rate your own product. This is how your product is currently rated by others.
+                </Typography>
+              </Paper>
+            ) : (
+              <Paper elevation={2} sx={{ p: 3, borderRadius: 2, mb: 2 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Rate This Product
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Please <Button variant="text" onClick={() => navigate('/login', { state: { from: `/products/${id}` } })}>log in</Button> to rate this product.
+                </Typography>
+              </Paper>
+            )}
 
             <Button
               variant="text"

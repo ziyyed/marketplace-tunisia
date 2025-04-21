@@ -170,22 +170,47 @@ router.post('/', auth, async (req, res) => {
       user: req.user._id
     });
 
-    console.log('Saving listing to database...');
-    const savedListing = await newListing.save();
-    console.log('Listing saved with ID:', savedListing._id);
+    console.log('Saving listing to database with data:', {
+      title,
+      price: Number(price),
+      category,
+      condition: condition || 'Used',
+      location,
+      userId: req.user._id,
+      imageCount: imageUrls.length
+    });
 
-    // Add the listing to the user's listings array
-    await User.findByIdAndUpdate(
-      req.user._id,
-      { $push: { listings: savedListing._id } },
-      { new: true }
-    );
-    console.log('Updated user document with new listing reference');
+    try {
+      const savedListing = await newListing.save();
+      console.log('Listing saved successfully with ID:', savedListing._id);
+
+      // Add the listing to the user's listings array
+      try {
+        const updatedUser = await User.findByIdAndUpdate(
+          req.user._id,
+          { $push: { listings: savedListing._id } },
+          { new: true }
+        );
+
+        if (updatedUser) {
+          console.log('Updated user document with new listing reference');
+          console.log('User now has', updatedUser.listings.length, 'listings');
+        } else {
+          console.error('User not found when updating listings array');
+        }
+      } catch (userUpdateError) {
+        console.error('Error updating user with new listing:', userUpdateError);
+        // Continue even if user update fails - the listing is still saved
+      }
+    } catch (saveError) {
+      console.error('Error saving listing to database:', saveError);
+      return res.status(500).json({ message: 'Error saving listing to database', error: saveError.message });
+    }
 
     // Return success response with the created listing
     res.status(201).json({
       message: 'Listing created successfully',
-      listing: savedListing
+      listing: newListing
     });
   } catch (error) {
     console.error('ERROR creating listing:', error);
@@ -229,6 +254,61 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching listing:', error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Rate a listing
+router.post('/:id/rate', auth, async (req, res) => {
+  try {
+    const { rating } = req.body;
+
+    if (!rating || rating < 0.5 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 0.5 and 5' });
+    }
+
+    console.log(`User ${req.user._id} rating listing ${req.params.id} with ${rating} stars`);
+
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) {
+      return res.status(404).json({ message: 'Listing not found' });
+    }
+
+    // Check if the user is the owner of the listing
+    if (listing.user.toString() === req.user._id.toString()) {
+      return res.status(403).json({ message: 'You cannot rate your own listing' });
+    }
+
+    // Check if user has already rated this listing
+    const existingRatingIndex = listing.ratings.findIndex(
+      r => r.user.toString() === req.user._id.toString()
+    );
+
+    if (existingRatingIndex > -1) {
+      // Update existing rating
+      listing.ratings[existingRatingIndex].value = rating;
+    } else {
+      // Add new rating
+      listing.ratings.push({
+        user: req.user._id,
+        value: rating
+      });
+    }
+
+    // Calculate new average rating
+    const totalRating = listing.ratings.reduce((sum, r) => sum + r.value, 0);
+    listing.rating = totalRating / listing.ratings.length;
+    listing.ratingCount = listing.ratings.length;
+
+    await listing.save();
+
+    res.json({
+      message: 'Rating submitted successfully',
+      rating: listing.rating,
+      ratingCount: listing.ratingCount
+    });
+  } catch (error) {
+    console.error('Error rating listing:', error);
+    res.status(500).json({ message: 'Error submitting rating' });
   }
 });
 

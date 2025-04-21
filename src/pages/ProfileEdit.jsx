@@ -76,32 +76,61 @@ const ProfileEdit = () => {
     setError(null);
 
     try {
+      // Create a FormData object
       const formData = new FormData();
       formData.append('avatar', avatarFile);
 
+      // Log the FormData contents for debugging
+      console.log('FormData created with file:', avatarFile.name);
+
+      // Make sure we're using the correct URL and headers
+      const url = `http://${window.location.hostname}:5002/api/users/avatar`;
+      console.log('Uploading avatar to:', url);
+
+      // Get the token from localStorage
+      const authToken = localStorage.getItem('token');
+      console.log('Using auth token:', authToken ? 'Present' : 'Missing');
+
+      if (!authToken) {
+        throw new Error('Authentication token is missing. Please log in again.');
+      }
+
+      // Make the API request
       const response = await axios.put(
-        `http://${window.location.hostname}:5002/api/users/avatar`,
+        url,
         formData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`
+            'Authorization': `Bearer ${authToken}`
           }
         }
       );
 
-      // Update user in context
+      console.log('Avatar upload response:', response.data);
+
+      // Update user in context with the new avatar URL
       setUser(prev => ({
         ...prev,
         avatar: response.data.avatar
       }));
 
+      // Update the avatar preview
+      setAvatarPreview(`http://${window.location.hostname}:5002${response.data.avatar}`);
+
       toast.success('Avatar updated successfully');
       setAvatarFile(null);
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-      setError('Failed to update avatar');
-      toast.error('Failed to update avatar');
+      console.error('Error uploading avatar:', error.response?.data || error.message);
+      setError(error.response?.data?.message || error.message || 'Failed to update avatar');
+      toast.error('Failed to update avatar: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+
+      // If token is invalid, redirect to login
+      if (error.response?.status === 401) {
+        toast.error('Your session has expired. Please log in again.');
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
     } finally {
       setAvatarLoading(false);
     }
@@ -113,16 +142,27 @@ const ProfileEdit = () => {
     setError(null);
 
     try {
+      // Get the token from localStorage
+      const authToken = localStorage.getItem('token');
+      console.log('Using auth token for profile update:', authToken ? 'Present' : 'Missing');
+      console.log('Form data being submitted:', formData);
+
+      if (!authToken) {
+        throw new Error('Authentication token is missing. Please log in again.');
+      }
+
       const response = await axios.put(
         `http://${window.location.hostname}:5002/api/users/profile`,
         formData,
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            'Authorization': `Bearer ${authToken}`
           }
         }
       );
+
+      console.log('Profile update response:', response.data);
 
       // Update user in context
       setUser(response.data);
@@ -130,9 +170,16 @@ const ProfileEdit = () => {
       toast.success('Profile updated successfully');
       navigate('/profile');
     } catch (error) {
-      console.error('Error updating profile:', error);
-      setError('Failed to update profile');
-      toast.error('Failed to update profile');
+      console.error('Error updating profile:', error.response?.data || error.message);
+      setError(error.response?.data?.message || error.message || 'Failed to update profile');
+      toast.error('Failed to update profile: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+
+      // If token is invalid, redirect to login
+      if (error.response?.status === 401) {
+        toast.error('Your session has expired. Please log in again.');
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
     } finally {
       setLoading(false);
     }

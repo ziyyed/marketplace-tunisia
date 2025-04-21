@@ -49,6 +49,26 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Ensure uploads directories exist
+const uploadsDir = path.join(__dirname, 'uploads');
+const avatarsDir = path.join(uploadsDir, 'avatars');
+const listingsDir = path.join(uploadsDir, 'listings');
+
+if (!fs.existsSync(uploadsDir)) {
+  console.log('Creating uploads directory:', uploadsDir);
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+if (!fs.existsSync(avatarsDir)) {
+  console.log('Creating avatars directory:', avatarsDir);
+  fs.mkdirSync(avatarsDir, { recursive: true });
+}
+
+if (!fs.existsSync(listingsDir)) {
+  console.log('Creating listings directory:', listingsDir);
+  fs.mkdirSync(listingsDir, { recursive: true });
+}
+
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
