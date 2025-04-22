@@ -158,6 +158,17 @@ const listings = {
       throw error;
     }
   },
+
+  deleteListing: async (id) => {
+    try {
+      console.log(`Deleting listing ${id}`);
+      const response = await api.delete(`/listings/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting listing ${id}:`, error);
+      throw error;
+    }
+  },
 };
 
 // Users API

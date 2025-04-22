@@ -14,8 +14,10 @@ import {
   Alert,
   Divider,
   Chip,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { LocationOn, Email, Phone, CalendarToday, Edit, ArrowBack } from '@mui/icons-material';
+import { LocationOn, Email, Phone, CalendarToday, Edit, ArrowBack, Refresh } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { api } from '../services/api';
 import ListingCard from '../components/Listing/ListingCard';
@@ -53,11 +55,26 @@ const Profile = () => {
   // Check if the profile belongs to the logged-in user
   const isOwnProfile = authUser && authUser._id === userId;
 
-  const { data: listings } = useQuery({
+  const { data: listings, refetch: refetchListings, isLoading: isLoadingListings } = useQuery({
     queryKey: ['userListings', userId],
     queryFn: () => userId ? api.listings.getByUser(userId) : null,
-    enabled: !!userId
+    enabled: !!userId,
+    refetchOnWindowFocus: false,
+    staleTime: 30000 // 30 seconds
   });
+
+  // Handle listing deletion
+  const handleListingDelete = async (listingId) => {
+    console.log(`Listing deleted: ${listingId}`);
+    // Refetch listings to update the UI
+    refetchListings();
+  };
+
+  // Handle manual refresh of listings
+  const handleRefreshListings = () => {
+    console.log('Manually refreshing listings');
+    refetchListings();
+  };
 
   if (isLoading) {
     return (
@@ -139,16 +156,29 @@ const Profile = () => {
                 />
               </Box>
               {isOwnProfile ? (
-                <Button
-                  variant="contained"
-                  onClick={() => navigate('/profile/edit')}
-                  startIcon={<Edit />}
-                  sx={{ mb: 1, borderRadius: 2, px: 3, py: 1 }}
-                  size="large"
-                  color="primary"
-                >
-                  Edit Profile
-                </Button>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%' }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate('/profile/edit')}
+                    startIcon={<Edit />}
+                    sx={{ borderRadius: 2, px: 3, py: 1 }}
+                    size="large"
+                    color="primary"
+                  >
+                    Edit Profile
+                  </Button>
+
+                  {listings?.length === 0 && (
+                    <Button
+                      variant="outlined"
+                      onClick={() => navigate('/profile/debug')}
+                      sx={{ borderRadius: 2 }}
+                      size="small"
+                    >
+                      Troubleshoot Missing Listings
+                    </Button>
+                  )}
+                </Box>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
                   <Button
@@ -200,14 +230,26 @@ const Profile = () => {
               />
               <Box flexGrow={1} />
               {isOwnProfile && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => navigate('/listings/create')}
-                  sx={{ borderRadius: 2 }}
-                >
-                  Add New Listing
-                </Button>
+                <>
+                  <Tooltip title="Refresh listings">
+                    <IconButton
+                      onClick={handleRefreshListings}
+                      sx={{ mr: 1 }}
+                      color="primary"
+                      disabled={isLoadingListings}
+                    >
+                      {isLoadingListings ? <CircularProgress size={24} /> : <Refresh />}
+                    </IconButton>
+                  </Tooltip>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => navigate('/listings/create')}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Add New Listing
+                  </Button>
+                </>
               )}
             </Box>
             <Divider sx={{ mb: 3 }} />
@@ -217,20 +259,28 @@ const Profile = () => {
                   {isOwnProfile ? 'You haven\'t posted any listings yet.' : 'This user hasn\'t posted any listings yet.'}
                 </Typography>
                 {isOwnProfile && (
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate('/listings/create')}
-                    sx={{ mt: 2, borderRadius: 2 }}
-                  >
-                    Create Your First Listing
-                  </Button>
+                  <>
+                    <Alert severity="info" sx={{ mb: 2, maxWidth: 500, mx: 'auto' }}>
+                      If you've recently created listings but don't see them here, try clicking the refresh button above or use the <Button size="small" onClick={() => navigate('/profile/debug')} sx={{ minWidth: 'auto', p: 0, textTransform: 'none' }} color="primary">troubleshooting tool</Button>.
+                    </Alert>
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate('/listings/create')}
+                      sx={{ mt: 2, borderRadius: 2 }}
+                    >
+                      Create Your First Listing
+                    </Button>
+                  </>
                 )}
               </Box>
             ) : (
               <Grid container spacing={3}>
                 {listings?.map((listing) => (
                   <Grid item xs={12} sm={6} key={listing._id}>
-                    <ListingCard listing={listing} />
+                    <ListingCard
+                      listing={listing}
+                      onDelete={handleListingDelete}
+                    />
                   </Grid>
                 ))}
               </Grid>

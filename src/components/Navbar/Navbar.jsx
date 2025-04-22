@@ -106,7 +106,8 @@ const Navbar = () => {
               sx={{ ml: 2 }}
             >
               <Avatar
-                src={user.avatar}
+                src={user.avatar?.startsWith('http') ? user.avatar :
+                     `http://${window.location.hostname}:5002${user.avatar}` || '/default-avatar.png'}
                 sx={{ width: 32, height: 32 }}
               />
             </IconButton>
@@ -148,4 +149,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

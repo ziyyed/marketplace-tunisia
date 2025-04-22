@@ -26,6 +26,7 @@ import Navbar from './components/Navbar/Navbar';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import ProductDetails from './pages/ProductDetails';
+import ListingDebug from './pages/ListingDebug';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -59,6 +60,7 @@ function App() {
               <Route path="/products/:id" element={<ProductDetails />} />
               <Route path="/search" element={<Search />} />
               <Route path="/profile/edit" element={<ProfileEdit />} />
+              <Route path="/profile/debug" element={<ListingDebug />} />
               <Route path="/profile/:id" element={<Profile />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/messages" element={<Messages />} />

@@ -186,4 +186,74 @@ router.get('/:id/listings', async (req, res) => {
   }
 });
 
+// Sync user listings - add missing listings to user's listings array
+router.post('/sync-listings', verifyToken, async (req, res) => {
+  try {
+    console.log('Syncing listings for user:', req.user._id);
+    const { userId, listingIds } = req.body;
+
+    // Verify user is authorized to sync these listings
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({ message: 'You can only sync your own listings' });
+    }
+
+    if (!listingIds || !Array.isArray(listingIds) || listingIds.length === 0) {
+      return res.status(400).json({ message: 'No listing IDs provided' });
+    }
+
+    console.log(`Attempting to sync ${listingIds.length} listings for user ${userId}`);
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get current listings array
+    const currentListings = user.listings.map(id => id.toString());
+    console.log('Current listings:', currentListings);
+
+    // Filter out listings that are already in the user's listings array
+    const newListingIds = listingIds.filter(id => !currentListings.includes(id.toString()));
+    console.log('New listings to add:', newListingIds);
+
+    if (newListingIds.length === 0) {
+      return res.json({ message: 'No new listings to sync', addedCount: 0 });
+    }
+
+    // Verify all listings exist and belong to this user
+    for (const listingId of newListingIds) {
+      const listing = await Listing.findById(listingId);
+      if (!listing) {
+        return res.status(404).json({ message: `Listing ${listingId} not found` });
+      }
+
+      if (listing.user.toString() !== userId) {
+        return res.status(403).json({
+          message: `Listing ${listingId} does not belong to this user`
+        });
+      }
+    }
+
+    // Add new listings to user's listings array
+    const result = await User.findByIdAndUpdate(
+      userId,
+      { $push: { listings: { $each: newListingIds } } },
+      { new: true }
+    );
+
+    console.log(`Successfully added ${newListingIds.length} listings to user ${userId}`);
+    console.log('User now has', result.listings.length, 'listings');
+
+    res.json({
+      message: 'Listings synced successfully',
+      addedCount: newListingIds.length,
+      totalCount: result.listings.length
+    });
+  } catch (error) {
+    console.error('Sync listings error:', error);
+    res.status(500).json({ message: 'Error syncing listings: ' + error.message });
+  }
+});
+
 export default router;

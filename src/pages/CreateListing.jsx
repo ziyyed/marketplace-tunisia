@@ -183,7 +183,15 @@ const CreateListing = () => {
       // Get token from local storage
       const token = localStorage.getItem('token');
 
-      // Make API request using the api service
+      if (!token) {
+        toast.error('You are not logged in. Please log in and try again.');
+        navigate('/login');
+        return;
+      }
+
+      // Make API request using axios directly for better error handling
+      toast.info('Creating your listing...', { autoClose: 2000 });
+
       const response = await axios.post(
         `http://${window.location.hostname}:5002/api/listings`,
         data,
@@ -191,16 +199,33 @@ const CreateListing = () => {
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${token}`
-          }
+          },
+          timeout: 30000 // 30 seconds timeout
         }
       );
 
       console.log('Listing created successfully:', response.data);
       toast.success('Listing created successfully!');
-      navigate('/');
+
+      // Redirect to profile page to see the new listing
+      navigate('/profile');
     } catch (error) {
       console.error('Error creating listing:', error);
-      toast.error(error.response?.data?.message || 'Failed to create listing');
+
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Server response error:', error.response.data);
+        toast.error(error.response.data.message || 'Server error. Please try again.');
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        toast.error('No response from server. Please check your internet connection.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Request setup error:', error.message);
+        toast.error('Error creating listing: ' + error.message);
+      }
     } finally {
       setIsSubmitting(false);
     }

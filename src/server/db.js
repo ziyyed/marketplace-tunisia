@@ -35,7 +35,7 @@ const connectDB = async () => {
       console.log('Mongoose disconnected from MongoDB');
     });
 
-    // Test the connection by listing collections
+    // Test connection listing 
     const collections = await conn.connection.db.listCollections().toArray();
     console.log('Available collections:', collections.map(c => c.name).join(', ') || 'No collections found');
 

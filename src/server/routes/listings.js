@@ -9,6 +9,69 @@ const router = express.Router();
 // IMPORTANT: Order of routes matters!
 // 1. First, specific routes with static paths
 
+// Debug route to get detailed information about user listings
+router.get('/debug/user/:userId', async (req, res) => {
+  try {
+    console.log(`DEBUG: Getting detailed listing info for user: ${req.params.userId}`);
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Get user information
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get user's listings array
+    const userListingsIds = user.listings || [];
+    console.log(`User has ${userListingsIds.length} listing IDs in their listings array:`, userListingsIds);
+
+    // Get all listings where user is the owner
+    const directListings = await Listing.find({ user: req.params.userId }).lean();
+    console.log(`Found ${directListings.length} listings directly for user`);
+
+    // Get detailed information about each listing in the user's listings array
+    const userListingsDetails = [];
+    for (const listingId of userListingsIds) {
+      const listing = await Listing.findById(listingId).lean();
+      userListingsDetails.push({
+        id: listingId,
+        exists: !!listing,
+        details: listing ? {
+          title: listing.title,
+          price: listing.price,
+          category: listing.category,
+          createdAt: listing.createdAt
+        } : null
+      });
+    }
+
+    // Return detailed debug information
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        listingsCount: userListingsIds.length,
+        listingsIds: userListingsIds
+      },
+      userListingsDetails,
+      directListings: directListings.map(l => ({
+        id: l._id,
+        title: l.title,
+        price: l.price,
+        category: l.category,
+        createdAt: l.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Error in debug route:', error);
+    res.status(500).json({ message: error.message, stack: error.stack });
+  }
+});
+
 // Get listings by user ID - must be before /:id to avoid being interpreted as an ID
 router.get('/user/:userId', async (req, res) => {
   try {
@@ -18,16 +81,51 @@ router.get('/user/:userId', async (req, res) => {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
 
-    const listings = await Listing.find({
-      user: req.params.userId,
-      status: 'active'
+    // First, try to get the user to access their listings array
+    const user = await User.findById(req.params.userId).populate('listings');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log(`User has ${user.listings?.length || 0} listings in their listings array`);
+
+    // As a backup, also query listings directly
+    const directListings = await Listing.find({
+      user: req.params.userId
     })
     .sort({ createdAt: -1 })
     .populate('user', 'name avatar')
     .exec();
 
-    console.log(`Found ${listings.length} listings for user`);
-    res.json(listings);
+    console.log(`Found ${directListings.length} listings directly for user`);
+
+    // Combine both approaches to ensure we get all listings
+    let allListings = [];
+
+    // Add listings from user.listings if they exist
+    if (user.listings && user.listings.length > 0) {
+      // Filter out any null values
+      const populatedListings = user.listings.filter(listing => listing != null);
+      allListings = [...populatedListings];
+    }
+
+    // Add any listings from direct query that aren't already included
+    if (directListings.length > 0) {
+      directListings.forEach(directListing => {
+        // Check if this listing is already in allListings
+        const exists = allListings.some(l => l._id.toString() === directListing._id.toString());
+        if (!exists) {
+          allListings.push(directListing);
+        }
+      });
+    }
+
+    // Sort by creation date
+    allListings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    console.log(`Returning ${allListings.length} total listings for user`);
+    res.json(allListings);
   } catch (error) {
     console.error('Error fetching user listings:', error);
     res.status(500).json({ message: error.message });
@@ -159,7 +257,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     // Create a new listing document
-    const newListing = new Listing({
+    let newListing = new Listing({
       title,
       description,
       price: Number(price),
@@ -181,27 +279,30 @@ router.post('/', auth, async (req, res) => {
     });
 
     try {
+      // Save the listing without using a transaction first
+      console.log('Saving listing to database without transaction');
       const savedListing = await newListing.save();
       console.log('Listing saved successfully with ID:', savedListing._id);
 
       // Add the listing to the user's listings array
-      try {
-        const updatedUser = await User.findByIdAndUpdate(
-          req.user._id,
-          { $push: { listings: savedListing._id } },
-          { new: true }
-        );
+      console.log('Updating user with listing ID:', savedListing._id);
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        { $push: { listings: savedListing._id } },
+        { new: true }
+      );
 
-        if (updatedUser) {
-          console.log('Updated user document with new listing reference');
-          console.log('User now has', updatedUser.listings.length, 'listings');
-        } else {
-          console.error('User not found when updating listings array');
-        }
-      } catch (userUpdateError) {
-        console.error('Error updating user with new listing:', userUpdateError);
-        // Continue even if user update fails - the listing is still saved
+      if (updatedUser) {
+        console.log('Updated user document with new listing reference');
+        console.log('User now has', updatedUser.listings.length, 'listings');
+      } else {
+        console.error('User not found when updating listings array');
+        // Don't throw an error here, just log it
+        console.error('Will continue anyway as the listing was saved successfully');
       }
+
+      // Set the listing variable for the response
+      newListing = savedListing;
     } catch (saveError) {
       console.error('Error saving listing to database:', saveError);
       return res.status(500).json({ message: 'Error saving listing to database', error: saveError.message });
@@ -309,6 +410,43 @@ router.post('/:id/rate', auth, async (req, res) => {
   } catch (error) {
     console.error('Error rating listing:', error);
     res.status(500).json({ message: 'Error submitting rating' });
+  }
+});
+
+// Delete a listing
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    console.log(`Deleting listing ${req.params.id} by user ${req.user._id}`);
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid listing ID' });
+    }
+
+    // Find the listing
+    const listing = await Listing.findById(req.params.id);
+
+    if (!listing) {
+      return res.status(404).json({ message: 'Listing not found' });
+    }
+
+    // Check if the user is the owner of the listing
+    if (listing.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only delete your own listings' });
+    }
+
+    // Delete the listing
+    await Listing.findByIdAndDelete(req.params.id);
+
+    // Remove the listing from the user's listings array
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $pull: { listings: req.params.id } }
+    );
+
+    res.json({ message: 'Listing deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    res.status(500).json({ message: 'Error deleting listing', error: error.message });
   }
 });
 
