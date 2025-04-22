@@ -5,7 +5,7 @@ const listingSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Title is required'],
     trim: true,
-    minlength: [3, 'Title must be at least 3 characters long']
+    minlength: [2, 'Title must be at least 2 characters long']
   },
   description: {
     type: String,
@@ -47,10 +47,10 @@ const listingSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  images: [{
-    type: String,
+  images: {
+    type: [String],
     default: []
-  }],
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

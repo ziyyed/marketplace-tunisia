@@ -281,28 +281,49 @@ router.post('/', auth, async (req, res) => {
     try {
       // Save the listing without using a transaction first
       console.log('Saving listing to database without transaction');
-      const savedListing = await newListing.save();
-      console.log('Listing saved successfully with ID:', savedListing._id);
+      console.log('Listing data:', JSON.stringify(newListing, null, 2));
 
-      // Add the listing to the user's listings array
-      console.log('Updating user with listing ID:', savedListing._id);
-      const updatedUser = await User.findByIdAndUpdate(
-        req.user._id,
-        { $push: { listings: savedListing._id } },
-        { new: true }
-      );
+      try {
+        const savedListing = await newListing.save();
+        console.log('Listing saved successfully with ID:', savedListing._id);
 
-      if (updatedUser) {
-        console.log('Updated user document with new listing reference');
-        console.log('User now has', updatedUser.listings.length, 'listings');
-      } else {
-        console.error('User not found when updating listings array');
-        // Don't throw an error here, just log it
-        console.error('Will continue anyway as the listing was saved successfully');
+        // Add the listing to the user's listings array
+        console.log('Updating user with listing ID:', savedListing._id);
+        const updatedUser = await User.findByIdAndUpdate(
+          req.user._id,
+          { $push: { listings: savedListing._id } },
+          { new: true }
+        );
+
+        if (updatedUser) {
+          console.log('Updated user document with new listing reference');
+          console.log('User now has', updatedUser.listings.length, 'listings');
+        } else {
+          console.error('User not found when updating listings array');
+          // Don't throw an error here, just log it
+          console.error('Will continue anyway as the listing was saved successfully');
+        }
+
+        // Set the listing variable for the response
+        newListing = savedListing;
+      } catch (mongoError) {
+        console.error('MongoDB Error Details:', mongoError);
+        console.error('Error Code:', mongoError.code);
+        console.error('Error Name:', mongoError.name);
+        console.error('Error Message:', mongoError.message);
+
+        if (mongoError.code === 11000) {
+          // Duplicate key error
+          console.error('Duplicate key error. Field:', Object.keys(mongoError.keyPattern)[0]);
+          return res.status(400).json({
+            message: 'A listing with this information already exists',
+            error: 'Duplicate entry',
+            field: Object.keys(mongoError.keyPattern)[0]
+          });
+        }
+
+        throw mongoError; // Re-throw for the outer catch block
       }
-
-      // Set the listing variable for the response
-      newListing = savedListing;
     } catch (saveError) {
       console.error('Error saving listing to database:', saveError);
       return res.status(500).json({ message: 'Error saving listing to database', error: saveError.message });

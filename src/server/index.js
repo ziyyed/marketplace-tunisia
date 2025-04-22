@@ -40,7 +40,23 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
+  fileFilter: function (req, file, cb) {
+    // Check file type
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      console.error('Invalid file type:', file.originalname);
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+
+    // Check file size before processing
+    if (file.size > 10 * 1024 * 1024) {
+      console.error('File too large:', file.originalname, file.size);
+      return cb(new Error('File too large. Maximum size is 10MB.'), false);
+    }
+
+    console.log('File accepted:', file.originalname, file.size);
+    cb(null, true);
   }
 });
 
@@ -94,12 +110,34 @@ app.use('/api/listings', (req, res, next) => {
     console.log('Auth header:', req.headers.authorization ? 'Present' : 'Missing');
     console.log('Content-Type:', req.headers['content-type']);
 
-    return upload.array('images', 10)(req, res, (err) => {
+    return upload.array('images', 5)(req, res, (err) => {
       if (err) {
         console.error('Multer error:', err);
         return res.status(400).json({ message: err.message });
       }
+
+      // Log detailed information about uploaded files
       console.log('Multer processed successfully, files:', req.files?.length || 0);
+
+      if (req.files && req.files.length > 0) {
+        req.files.forEach((file, index) => {
+          console.log(`File ${index + 1}:`, {
+            filename: file.filename,
+            originalname: file.originalname,
+            size: file.size,
+            mimetype: file.mimetype,
+            path: file.path
+          });
+
+          // Verify file exists on disk
+          if (!fs.existsSync(file.path)) {
+            console.error(`File ${file.filename} does not exist on disk!`);
+          }
+        });
+      } else {
+        console.log('No files uploaded, will use placeholder image');
+      }
+
       next();
     });
   } else {
