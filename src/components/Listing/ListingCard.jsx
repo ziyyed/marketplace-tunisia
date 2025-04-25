@@ -31,11 +31,9 @@ const ListingCard = ({ listing, showRating = false, onDelete }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Check if the current user is the owner of the listing
   const isOwner = user && listing.user && (user._id === listing.user._id || user._id === listing.user);
 
   const handleCardClick = () => {
-    // Navigate to ProductDetails for product categories, ListingDetail for service categories
     if (listing.category === 'Electronics' || listing.category === 'Fashion' ||
         listing.category === 'Home & Garden' || listing.category === 'Vehicles') {
       navigate(`/products/${listing._id}`);
@@ -45,7 +43,7 @@ const ListingCard = ({ listing, showRating = false, onDelete }) => {
   };
 
   const handleDeleteClick = (e) => {
-    e.stopPropagation(); // Prevent card click
+    e.stopPropagation();
     setDeleteDialogOpen(true);
   };
 
@@ -55,7 +53,6 @@ const ListingCard = ({ listing, showRating = false, onDelete }) => {
       await listingsApi.deleteListing(listing._id);
       setDeleteDialogOpen(false);
 
-      // Call the onDelete callback if provided
       if (onDelete) {
         onDelete(listing._id);
       }
@@ -118,7 +115,7 @@ const ListingCard = ({ listing, showRating = false, onDelete }) => {
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                // Handle favorite
+
               }}
             >
               <FavoriteIcon color="error" />
@@ -175,7 +172,6 @@ const ListingCard = ({ listing, showRating = false, onDelete }) => {
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}

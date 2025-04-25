@@ -46,13 +46,7 @@ const conditions = [
   'For Parts'
 ];
 
-// Use the standardized list of Tunisian locations
-// const cities = [
-//   'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
-//   'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine',
-//   'Nabeul', 'Hammamet', 'Tataouine', 'Béja', 'Jendouba', 'El Kef', 'Mahdia',
-//   'Sidi Bouzid', 'Tozeur', 'Siliana', 'Zaghouan', 'Kébili'
-// ];
+
 
 const CreateListing = () => {
   const navigate = useNavigate();
@@ -150,7 +144,6 @@ const CreateListing = () => {
     setIsSubmitting(true);
 
     try {
-      // Create FormData
       const data = new FormData();
       data.append('title', formData.title);
       data.append('description', formData.description);
@@ -167,7 +160,6 @@ const CreateListing = () => {
         data.append('phone', formData.phone);
       }
 
-      // Add all images
       imageFiles.forEach(file => {
         data.append('images', file);
       });
@@ -180,7 +172,6 @@ const CreateListing = () => {
         imageCount: imageFiles.length
       });
 
-      // Get token from local storage
       const token = localStorage.getItem('token');
 
       if (!token) {
@@ -189,7 +180,6 @@ const CreateListing = () => {
         return;
       }
 
-      // Make API request using axios directly for better error handling
       toast.info('Creating your listing...', { autoClose: 2000 });
 
       const response = await axios.post(
@@ -207,22 +197,17 @@ const CreateListing = () => {
       console.log('Listing created successfully:', response.data);
       toast.success('Listing created successfully!');
 
-      // Redirect to profile page to see the new listing
       navigate('/profile');
     } catch (error) {
       console.error('Error creating listing:', error);
 
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         console.error('Server response error:', error.response.data);
         toast.error(error.response.data.message || 'Server error. Please try again.');
       } else if (error.request) {
-        // The request was made but no response was received
         console.error('No response received:', error.request);
         toast.error('No response from server. Please check your internet connection.');
       } else {
-        // Something happened in setting up the request that triggered an Error
         console.error('Request setup error:', error.message);
         toast.error('Error creating listing: ' + error.message);
       }
@@ -243,7 +228,6 @@ const CreateListing = () => {
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <Grid container spacing={3}>
-            {/* Basic Information */}
             <Grid item xs={12}>
               <TextField
                 required
@@ -311,7 +295,6 @@ const CreateListing = () => {
               />
             </Grid>
 
-            {/* Price & Location */}
             <Grid item xs={12} sm={6}>
               <TextField
                 required
@@ -370,7 +353,6 @@ const CreateListing = () => {
               />
             </Grid>
 
-            {/* Image Upload */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
                 Upload Images
@@ -444,7 +426,6 @@ const CreateListing = () => {
               </Grid>
             </Grid>
 
-            {/* Submit Button */}
             <Grid item xs={12}>
               <Button
                 type="submit"

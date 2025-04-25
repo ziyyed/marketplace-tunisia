@@ -72,27 +72,15 @@ const Navbar = () => {
             </Button>
             {user ? (
               <>
-                <Button
-                  color="inherit"
-                  startIcon={<MessageIcon />}
-                  onClick={() => navigate('/messages')}
-                >
-                  Messages
-                </Button>
-                <Button
-                  color="inherit"
-                  startIcon={<FavoriteIcon />}
-                  onClick={() => navigate('/favorites')}
-                >
-                  Favorites
-                </Button>
-                <Button
-                  color="inherit"
-                  startIcon={<NotificationsIcon />}
-                  onClick={() => navigate('/notifications')}
-                >
-                  Notifications
-                </Button>
+                <IconButton color="inherit">
+                  <MessageIcon />
+                </IconButton>
+                <IconButton color="inherit">
+                  <FavoriteIcon />
+                </IconButton>
+                <IconButton color="inherit">
+                  <NotificationsIcon />
+                </IconButton>
               </>
             ) : null}
           </Box>
@@ -118,9 +106,6 @@ const Navbar = () => {
             >
               <MenuItem onClick={() => { navigate('/profile'); handleClose(); }}>
                 Profile
-              </MenuItem>
-              <MenuItem onClick={() => { navigate('/settings'); handleClose(); }}>
-                Settings
               </MenuItem>
               <MenuItem onClick={handleLogout}>
                 Logout

@@ -55,12 +55,10 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        // Fetch real data from the API
         const apiBaseUrl = getApiBaseUrl();
         const response = await axios.get(`${apiBaseUrl}/listings/${id}`);
         console.log('Product data:', response.data);
 
-        // Transform the data to match our component's expectations
         const productData = {
           id: response.data._id,
           title: response.data.title,
@@ -98,9 +96,8 @@ const ProductDetails = () => {
         };
 
         setProduct(productData);
-        setIsFavorite(false); // Default to not favorited
+        setIsFavorite(false);
 
-        // Check if the current user has already rated this product
         if (user && response.data.ratings) {
           const userRating = response.data.ratings.find(r => r.user === user._id);
           if (userRating) {
@@ -121,7 +118,7 @@ const ProductDetails = () => {
 
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
-    // Would send API request to toggle favorite status
+
   };
 
   const handleContactSeller = () => {
@@ -129,13 +126,11 @@ const ProductDetails = () => {
       navigate('/login', { state: { from: `/listings/${id}` } });
       return;
     }
-    // Navigate to messages with this seller
     navigate(`/messages?seller=${product.seller.id}`);
   };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    // Show toast notification
     alert('Link copied to clipboard');
   };
 
@@ -145,7 +140,6 @@ const ProductDetails = () => {
       return;
     }
 
-    // Check if the current user is the owner of the product
     if (product.seller.id === user._id) {
       alert('You cannot rate your own product!');
       return;
@@ -154,19 +148,15 @@ const ProductDetails = () => {
     setUserRating(newValue);
 
     try {
-      // Send the rating to the server
       console.log(`Submitting rating ${newValue} for product ${id}`);
 
       setLoading(true);
 
-      // Import the listings API
       const { listings } = await import('../services/api');
 
-      // Call the API to rate the listing
       const response = await listings.rateListing(id, newValue);
       console.log('Rating response:', response);
 
-      // Update the product's rating in the UI with the new average from the server
       setProduct(prev => ({
         ...prev,
         rating: response.rating,
@@ -176,7 +166,6 @@ const ProductDetails = () => {
       setRatingSubmitted(true);
       setLoading(false);
 
-      // Show success message
       alert('Thank you for your rating!');
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -236,7 +225,6 @@ const ProductDetails = () => {
       </Button>
 
       <Grid container spacing={3}>
-        {/* Product Images */}
         <Grid item xs={12} md={8}>
           <Paper elevation={2} sx={{ borderRadius: 2, overflow: 'hidden' }}>
             <Swiper
@@ -263,7 +251,6 @@ const ProductDetails = () => {
             </Swiper>
           </Paper>
 
-          {/* Product Description */}
           <Paper elevation={2} sx={{ p: 3, mt: 3, borderRadius: 2 }}>
             <Typography variant="h5" gutterBottom fontWeight="bold">
               Description
@@ -301,10 +288,8 @@ const ProductDetails = () => {
           </Paper>
         </Grid>
 
-        {/* Product Details and Actions */}
         <Grid item xs={12} md={4}>
           <Stack spacing={3}>
-            {/* Main Product Info */}
             <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h5" gutterBottom fontWeight="bold">
                 {product.title}
@@ -375,7 +360,6 @@ const ProductDetails = () => {
               </Box>
             </Paper>
 
-            {/* Seller Info */}
             <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom fontWeight="bold">
                 Seller Information
@@ -448,7 +432,6 @@ const ProductDetails = () => {
               </Button>
             </Paper>
 
-            {/* Safety Tips */}
             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'info.lightest' }}>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                 Safety Tips
@@ -472,7 +455,6 @@ const ProductDetails = () => {
               </Button>
             </Paper>
 
-            {/* User Rating - Only show if user is not the owner */}
             {user && product.seller.id !== user._id ? (
               <Paper elevation={2} sx={{ p: 3, borderRadius: 2, mb: 2 }}>
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>

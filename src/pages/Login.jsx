@@ -149,18 +149,19 @@ const Login = () => {
 
           <Box sx={{ mt: 3, textAlign: 'center' }}>
             <Link
-              component={RouterLink}
-              to="/forgot-password"
+              component="span"
               variant="body2"
               sx={{
                 display: 'block',
                 mb: 2,
                 color: 'primary.main',
                 textDecoration: 'none',
+                cursor: 'pointer',
                 '&:hover': {
                   textDecoration: 'underline',
                 },
               }}
+              onClick={() => {}}
             >
               Forgot Password?
             </Link>
@@ -188,4 +189,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

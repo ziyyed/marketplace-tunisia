@@ -53,24 +53,20 @@ const HomePage = () => {
   const { data: featuredListings, isLoading } = useQuery({
     queryKey: ['topRatedListings'],
     queryFn: async () => {
-      // Get all listings
       const allListings = await listings.getAll();
 
-      // Sort by rating (highest first)
       const sortedListings = [...allListings].sort((a, b) => {
         const ratingA = a.rating || 0;
         const ratingB = b.rating || 0;
         return ratingB - ratingA;
       });
 
-      // Return top rated listings
       return sortedListings.slice(0, 8);
     },
   });
 
   return (
     <Container maxWidth="lg">
-      {/* Hero Section */}
       <Paper
         elevation={3}
         sx={{
@@ -129,7 +125,6 @@ const HomePage = () => {
         )}
       </Paper>
 
-      {/* Categories */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <Category sx={{ mr: 1, color: 'primary.main', fontSize: 24 }} />
@@ -185,7 +180,6 @@ const HomePage = () => {
         </Box>
       </Box>
 
-      {/* Most Wanted Products */}
       <Box sx={{ mb: 6 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <Star sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />
@@ -221,7 +215,6 @@ const HomePage = () => {
         )}
       </Box>
 
-      {/* How It Works */}
       <Box sx={{ mb: 6 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <Sell sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />

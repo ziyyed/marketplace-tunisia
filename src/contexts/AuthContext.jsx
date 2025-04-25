@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-      
+
       try {
         console.log('Verifying authentication on startup');
         const response = await auth.verifyToken();
@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
-    
+
     verifyAuth();
   }, []);
 
@@ -44,12 +44,10 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const response = await auth.register(userData);
       console.log('Registration successful:', response.data.user);
-      
-      // Update auth state
+
       setUser(response.data.user);
       setIsAuthenticated(true);
-      
-      // Notify user
+
       toast.success('Registration successful!');
       return response;
     } catch (error) {
@@ -68,12 +66,10 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const response = await auth.login(credentials);
       console.log('Login successful:', response.data.user);
-      
-      // Update auth state
+
       setUser(response.data.user);
       setIsAuthenticated(true);
-      
-      // Notify user
+
       toast.success('Login successful!');
       return response;
     } catch (error) {
@@ -108,4 +104,4 @@ export const AuthProvider = ({ children }) => {
       {!loading && children}
     </AuthContext.Provider>
   );
-}; 
+};

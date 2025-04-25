@@ -101,13 +101,6 @@ const Search = () => {
     'For Parts'
   ];
 
-  // Use the standardized list of Tunisian locations
-  // const cities = [
-  //   'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana',
-  //   'Gafsa', 'Monastir', 'Ben Arous', 'La Marsa', 'Kasserine', 'Médenine',
-  //   'Nabeul', 'Hammamet'
-  // ];
-
   // Prepare data for display
   const listingsData = searchResults || [];
   const totalListings = listingsData.length;

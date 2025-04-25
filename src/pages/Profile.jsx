@@ -27,22 +27,18 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
 
-  // If no ID is provided, use the authenticated user's ID
   const userId = id || (authUser ? authUser._id : null);
 
-  // If we're viewing our own profile and we're authenticated, use the auth user data directly
   const isOwnProfileWithoutId = !id && authUser;
 
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['user', userId],
     queryFn: () => {
       console.log('Fetching user profile for ID:', userId);
-      // If it's our own profile without an ID in the URL, use the auth user data
       if (isOwnProfileWithoutId) {
         console.log('Using authenticated user data for own profile');
         return authUser;
       }
-      // Otherwise fetch from API
       return userId ? api.users.getById(userId) : null;
     },
     enabled: !!userId,
@@ -52,7 +48,6 @@ const Profile = () => {
     }
   });
 
-  // Check if the profile belongs to the logged-in user
   const isOwnProfile = authUser && authUser._id === userId;
 
   const { data: listings, refetch: refetchListings, isLoading: isLoadingListings } = useQuery({
@@ -63,14 +58,11 @@ const Profile = () => {
     staleTime: 30000 // 30 seconds
   });
 
-  // Handle listing deletion
   const handleListingDelete = async (listingId) => {
     console.log(`Listing deleted: ${listingId}`);
-    // Refetch listings to update the UI
     refetchListings();
   };
 
-  // Handle manual refresh of listings
   const handleRefreshListings = () => {
     console.log('Manually refreshing listings');
     refetchListings();

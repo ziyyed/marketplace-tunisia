@@ -70,6 +70,12 @@ const Register = () => {
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
       isValid = false;
+    } else if (/^\d/.test(formData.name)) {
+      newErrors.name = 'Name cannot start with a number';
+      isValid = false;
+    } else if (!/^[A-Za-z]{2,}/.test(formData.name)) {
+      newErrors.name = 'Name must start with at least 2 letters';
+      isValid = false;
     }
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
