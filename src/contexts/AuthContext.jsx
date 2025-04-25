@@ -52,8 +52,15 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (error) {
       console.error('Registration failed:', error);
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      toast.error(errorMessage);
+
+      // Handle specific error cases
+      if (error.response?.data?.message === 'User already exists') {
+        toast.error('This email is already registered. Please use a different email or try logging in.');
+      } else {
+        const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
+        toast.error(errorMessage);
+      }
+
       throw error;
     } finally {
       setLoading(false);
@@ -74,8 +81,15 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (error) {
       console.error('Login failed:', error);
-      const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
-      toast.error(errorMessage);
+
+      // Handle specific error cases
+      if (error.response?.data?.message === 'Invalid credentials') {
+        toast.error('Email or password is incorrect. Please try again.');
+      } else {
+        const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+        toast.error(errorMessage);
+      }
+
       throw error;
     } finally {
       setLoading(false);
