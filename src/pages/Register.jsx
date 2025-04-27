@@ -122,9 +122,13 @@ const Register = () => {
       navigate('/');
     } catch (err) {
       console.error('Registration error:', err);
+
+      // Get the error message directly from the response
+      const errorMessage = err.response?.data?.message || 'Registration failed. Please check your information and try again.';
+
       setErrors({
         ...errors,
-        general: err.response?.data?.message || 'Registration failed. Please check your information and try again.',
+        general: errorMessage
       });
     } finally {
       setLoading(false);

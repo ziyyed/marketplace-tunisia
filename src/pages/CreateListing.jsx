@@ -55,6 +55,8 @@ const CreateListing = () => {
   const [images, setImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
   const [imageError, setImageError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [priceError, setPriceError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -69,7 +71,40 @@ const CreateListing = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
+    if (name === 'phone') {
+      // Only allow digits for phone number
+      const phoneValue = value.replace(/\D/g, '');
+
+      // Validate phone number (must be exactly 8 digits)
+      if (phoneValue.length > 8) {
+        setPhoneError('Phone number must be exactly 8 digits');
+        return;
+      } else if (phoneValue.length > 0 && phoneValue.length < 8) {
+        setPhoneError('Phone number must be exactly 8 digits');
+      } else {
+        setPhoneError('');
+      }
+
+      setFormData({
+        ...formData,
+        [name]: phoneValue
+      });
+    } else if (name === 'price') {
+      // Only allow positive numbers for price
+      const priceValue = value.replace(/[^\d.]/g, '');
+
+      // Validate price (must be greater than 0)
+      if (parseFloat(priceValue) <= 0 && priceValue !== '') {
+        setPriceError('Price must be greater than 0');
+      } else {
+        setPriceError('');
+      }
+
+      setFormData({
+        ...formData,
+        [name]: priceValue
+      });
+    } else if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
       setFormData({
         ...formData,
         [name]: value,
@@ -138,6 +173,18 @@ const CreateListing = () => {
 
     if (images.length === 0) {
       setImageError('At least one image is required');
+      return;
+    }
+
+    // Validate phone number if provided
+    if (formData.phone && formData.phone.length !== 8) {
+      setPhoneError('Phone number must be exactly 8 digits');
+      return;
+    }
+
+    // Validate price
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      setPriceError('Price must be greater than 0');
       return;
     }
 
@@ -299,11 +346,12 @@ const CreateListing = () => {
               <TextField
                 required
                 fullWidth
-                type="number"
                 label="Price"
                 name="price"
                 value={formData.price}
                 onChange={handleChange}
+                error={!!priceError}
+                helperText={priceError}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">TND</InputAdornment>,
                 }}
@@ -318,6 +366,8 @@ const CreateListing = () => {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="Your contact number"
+                error={!!phoneError}
+                helperText={phoneError}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">+216</InputAdornment>,
                 }}

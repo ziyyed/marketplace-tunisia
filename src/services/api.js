@@ -238,6 +238,15 @@ const auth = {
       return response;
     } catch (error) {
       console.error('Registration API error:', error.message);
+
+      // Directly modify the error message if it's about user already existing
+      if (error.response && error.response.data && error.response.data.message) {
+        if (error.response.data.message.toLowerCase().includes('user') &&
+            error.response.data.message.toLowerCase().includes('exist')) {
+          error.response.data.message = 'Email already exists';
+        }
+      }
+
       throw error;
     }
   },
