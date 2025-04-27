@@ -123,6 +123,7 @@ const Register = () => {
     } catch (err) {
       console.error('Registration error:', err);
 
+<<<<<<< HEAD
       // Get the error message directly from the response
       const errorMessage = err.response?.data?.message || 'Registration failed. Please check your information and try again.';
 
@@ -130,6 +131,21 @@ const Register = () => {
         ...errors,
         general: errorMessage
       });
+=======
+      // Check if the error is about email already in use
+      if (err.response?.data?.message === 'User already exists') {
+        setErrors({
+          ...errors,
+          email: 'This email is already registered. Please use a different email or try logging in.',
+          general: ''
+        });
+      } else {
+        setErrors({
+          ...errors,
+          general: err.response?.data?.message || 'Registration failed. Please check your information and try again.',
+        });
+      }
+>>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
     } finally {
       setLoading(false);
     }

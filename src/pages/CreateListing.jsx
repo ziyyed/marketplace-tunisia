@@ -55,8 +55,19 @@ const CreateListing = () => {
   const [images, setImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
   const [imageError, setImageError] = useState('');
+<<<<<<< HEAD
   const [phoneError, setPhoneError] = useState('');
   const [priceError, setPriceError] = useState('');
+=======
+  const [errors, setErrors] = useState({
+    title: '',
+    description: '',
+    price: '',
+    phone: '',
+    neighborhood: '',
+    general: ''
+  });
+>>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -71,6 +82,7 @@ const CreateListing = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+<<<<<<< HEAD
     if (name === 'phone') {
       // Only allow digits for phone number
       const phoneValue = value.replace(/\D/g, '');
@@ -105,6 +117,47 @@ const CreateListing = () => {
         [name]: priceValue
       });
     } else if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
+=======
+    // Clear error when user starts typing
+    setErrors(prev => ({ ...prev, [name]: '' }));
+
+    // Handle field-specific validation as user types
+    if (name === 'phone') {
+      // Only validate if there's some input (don't show error for empty field)
+      if (value && value.length > 0) {
+        // Only show error if they've entered at least 4 digits
+        if (value.length >= 4 && !validatePhoneNumber(value)) {
+          setErrors(prev => ({ ...prev, phone: 'Please enter a valid Tunisian phone number' }));
+        }
+      }
+    }
+
+    if (name === 'title') {
+      if (value && value.length > 0 && value.length < 3) {
+        setErrors(prev => ({ ...prev, title: 'Title must be at least 3 characters' }));
+      }
+    }
+
+    if (name === 'description') {
+      if (value && value.length > 0 && value.length < 10) {
+        setErrors(prev => ({ ...prev, description: 'Description must be at least 10 characters' }));
+      }
+    }
+
+    if (name === 'price') {
+      if (value && (isNaN(value) || parseFloat(value) <= 0)) {
+        setErrors(prev => ({ ...prev, price: 'Price must be a positive number' }));
+      }
+    }
+
+    if (name === 'neighborhood') {
+      if (value && value.length > 0 && value.length < 2) {
+        setErrors(prev => ({ ...prev, neighborhood: 'Neighborhood must be at least 2 characters' }));
+      }
+    }
+
+    if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
+>>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
       setFormData({
         ...formData,
         [name]: value,
@@ -116,6 +169,19 @@ const CreateListing = () => {
         [name]: value
       });
     }
+  };
+
+  // Function to validate Tunisian phone number
+  const validatePhoneNumber = (phone) => {
+    if (!phone) return true; // Phone is optional
+
+    // Remove any spaces or dashes
+    const cleanPhone = phone.replace(/[\s-]/g, '');
+
+    // Check if it's a valid Tunisian phone number (8 digits starting with 2, 5, 9, or 4)
+    const tunisianPhoneRegex = /^[2459]\d{7}$/;
+
+    return tunisianPhoneRegex.test(cleanPhone);
   };
 
   const handleImageUpload = (event) => {
@@ -171,8 +237,62 @@ const CreateListing = () => {
       return;
     }
 
+    // Reset errors
+    setErrors({
+      title: '',
+      description: '',
+      price: '',
+      phone: '',
+      neighborhood: '',
+      general: ''
+    });
+    setImageError('');
+
+    // Validate all fields
+    let isValid = true;
+
     if (images.length === 0) {
       setImageError('At least one image is required');
+      isValid = false;
+    }
+
+    if (!formData.title.trim()) {
+      setErrors(prev => ({ ...prev, title: 'Title is required' }));
+      isValid = false;
+    } else if (formData.title.length < 3) {
+      setErrors(prev => ({ ...prev, title: 'Title must be at least 3 characters' }));
+      isValid = false;
+    }
+
+    if (!formData.description.trim()) {
+      setErrors(prev => ({ ...prev, description: 'Description is required' }));
+      isValid = false;
+    } else if (formData.description.length < 10) {
+      setErrors(prev => ({ ...prev, description: 'Description must be at least 10 characters' }));
+      isValid = false;
+    }
+
+    if (!formData.price.trim()) {
+      setErrors(prev => ({ ...prev, price: 'Price is required' }));
+      isValid = false;
+    } else if (isNaN(formData.price) || parseFloat(formData.price) <= 0) {
+      setErrors(prev => ({ ...prev, price: 'Price must be a positive number' }));
+      isValid = false;
+    }
+
+    // Validate phone number if provided
+    if (formData.phone && !validatePhoneNumber(formData.phone)) {
+      setErrors(prev => ({ ...prev, phone: 'Please enter a valid Tunisian phone number (8 digits starting with 2, 5, 9, or 4)' }));
+      isValid = false;
+    }
+
+    if (formData.neighborhood && formData.neighborhood.length < 2) {
+      setErrors(prev => ({ ...prev, neighborhood: 'Neighborhood must be at least 2 characters' }));
+      isValid = false;
+    }
+
+    if (!isValid) {
+      toast.error('Please fix the errors in the form');
       return;
     }
 
@@ -250,13 +370,19 @@ const CreateListing = () => {
 
       if (error.response) {
         console.error('Server response error:', error.response.data);
-        toast.error(error.response.data.message || 'Server error. Please try again.');
+        const errorMessage = error.response.data.message || 'Server error. Please try again.';
+        setErrors(prev => ({ ...prev, general: errorMessage }));
+        toast.error(errorMessage);
       } else if (error.request) {
         console.error('No response received:', error.request);
-        toast.error('No response from server. Please check your internet connection.');
+        const errorMessage = 'No response from server. Please check your internet connection.';
+        setErrors(prev => ({ ...prev, general: errorMessage }));
+        toast.error(errorMessage);
       } else {
         console.error('Request setup error:', error.message);
-        toast.error('Error creating listing: ' + error.message);
+        const errorMessage = 'Error creating listing: ' + error.message;
+        setErrors(prev => ({ ...prev, general: errorMessage }));
+        toast.error(errorMessage);
       }
     } finally {
       setIsSubmitting(false);
@@ -273,6 +399,12 @@ const CreateListing = () => {
           Fill in the details below to create your listing.
         </Typography>
 
+        {errors.general && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {errors.general}
+          </Alert>
+        )}
+
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -284,6 +416,8 @@ const CreateListing = () => {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="What are you selling?"
+                error={!!errors.title}
+                helperText={errors.title}
               />
             </Grid>
 
@@ -339,6 +473,8 @@ const CreateListing = () => {
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Describe your item in detail"
+                error={!!errors.description}
+                helperText={errors.description}
               />
             </Grid>
 
@@ -350,8 +486,13 @@ const CreateListing = () => {
                 name="price"
                 value={formData.price}
                 onChange={handleChange}
+<<<<<<< HEAD
                 error={!!priceError}
                 helperText={priceError}
+=======
+                error={!!errors.price}
+                helperText={errors.price}
+>>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
                 InputProps={{
                   startAdornment: <InputAdornment position="start">TND</InputAdornment>,
                 }}
@@ -366,8 +507,13 @@ const CreateListing = () => {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="Your contact number"
+<<<<<<< HEAD
                 error={!!phoneError}
                 helperText={phoneError}
+=======
+                error={!!errors.phone}
+                helperText={errors.phone || "Tunisian number format (e.g., 55123456)"}
+>>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
                 InputProps={{
                   startAdornment: <InputAdornment position="start">+216</InputAdornment>,
                 }}
@@ -400,6 +546,8 @@ const CreateListing = () => {
                 value={formData.neighborhood}
                 onChange={handleChange}
                 placeholder="Your neighborhood"
+                error={!!errors.neighborhood}
+                helperText={errors.neighborhood}
               />
             </Grid>
 
