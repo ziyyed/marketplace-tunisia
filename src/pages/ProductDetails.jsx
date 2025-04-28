@@ -35,14 +35,17 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import { formatDistanceToNow } from 'date-fns';
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/networkUtils';
+import { toast } from 'react-toastify';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -118,12 +121,17 @@ const ProductDetails = () => {
 
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
+  };
 
+  const handleAddToCart = () => {
+    // Add the product to cart without requiring login
+    addToCart(product);
+    // Toast notification is already shown in the CartContext
   };
 
   const handleContactSeller = () => {
     if (!user) {
-      navigate('/login', { state: { from: `/listings/${id}` } });
+      navigate('/login', { state: { from: `/products/${id}` } });
       return;
     }
     navigate(`/messages?seller=${product.seller.id}`);
@@ -334,9 +342,21 @@ const ProductDetails = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+              <Box sx={{ display: 'flex', gap: 1, mt: 2, mb: 2 }}>
                 <Button
                   variant="contained"
+                  color="secondary"
+                  fullWidth
+                  startIcon={<ShoppingCart />}
+                  onClick={handleAddToCart}
+                >
+                  Add to Cart
+                </Button>
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Button
+                  variant="outlined"
                   fullWidth
                   startIcon={<Chat />}
                   onClick={handleContactSeller}

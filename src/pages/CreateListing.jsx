@@ -55,10 +55,8 @@ const CreateListing = () => {
   const [images, setImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
   const [imageError, setImageError] = useState('');
-<<<<<<< HEAD
   const [phoneError, setPhoneError] = useState('');
   const [priceError, setPriceError] = useState('');
-=======
   const [errors, setErrors] = useState({
     title: '',
     description: '',
@@ -67,7 +65,6 @@ const CreateListing = () => {
     neighborhood: '',
     general: ''
   });
->>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -82,7 +79,10 @@ const CreateListing = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-<<<<<<< HEAD
+    // Clear error when user starts typing
+    setErrors(prev => ({ ...prev, [name]: '' }));
+
+    // Handle field-specific validation as user types
     if (name === 'phone') {
       // Only allow digits for phone number
       const phoneValue = value.replace(/\D/g, '');
@@ -90,9 +90,11 @@ const CreateListing = () => {
       // Validate phone number (must be exactly 8 digits)
       if (phoneValue.length > 8) {
         setPhoneError('Phone number must be exactly 8 digits');
+        setErrors(prev => ({ ...prev, phone: 'Phone number must be exactly 8 digits' }));
         return;
       } else if (phoneValue.length > 0 && phoneValue.length < 8) {
         setPhoneError('Phone number must be exactly 8 digits');
+        setErrors(prev => ({ ...prev, phone: 'Phone number must be exactly 8 digits' }));
       } else {
         setPhoneError('');
       }
@@ -108,6 +110,7 @@ const CreateListing = () => {
       // Validate price (must be greater than 0)
       if (parseFloat(priceValue) <= 0 && priceValue !== '') {
         setPriceError('Price must be greater than 0');
+        setErrors(prev => ({ ...prev, price: 'Price must be greater than 0' }));
       } else {
         setPriceError('');
       }
@@ -116,48 +119,34 @@ const CreateListing = () => {
         ...formData,
         [name]: priceValue
       });
-    } else if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
-=======
-    // Clear error when user starts typing
-    setErrors(prev => ({ ...prev, [name]: '' }));
-
-    // Handle field-specific validation as user types
-    if (name === 'phone') {
-      // Only validate if there's some input (don't show error for empty field)
-      if (value && value.length > 0) {
-        // Only show error if they've entered at least 4 digits
-        if (value.length >= 4 && !validatePhoneNumber(value)) {
-          setErrors(prev => ({ ...prev, phone: 'Please enter a valid Tunisian phone number' }));
-        }
-      }
-    }
-
-    if (name === 'title') {
+    } else if (name === 'title') {
       if (value && value.length > 0 && value.length < 3) {
         setErrors(prev => ({ ...prev, title: 'Title must be at least 3 characters' }));
       }
-    }
 
-    if (name === 'description') {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    } else if (name === 'description') {
       if (value && value.length > 0 && value.length < 10) {
         setErrors(prev => ({ ...prev, description: 'Description must be at least 10 characters' }));
       }
-    }
 
-    if (name === 'price') {
-      if (value && (isNaN(value) || parseFloat(value) <= 0)) {
-        setErrors(prev => ({ ...prev, price: 'Price must be a positive number' }));
-      }
-    }
-
-    if (name === 'neighborhood') {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    } else if (name === 'neighborhood') {
       if (value && value.length > 0 && value.length < 2) {
         setErrors(prev => ({ ...prev, neighborhood: 'Neighborhood must be at least 2 characters' }));
       }
-    }
 
-    if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
->>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    } else if (name === 'category' && (value === 'Services' || value === 'Jobs')) {
       setFormData({
         ...formData,
         [name]: value,
@@ -486,13 +475,8 @@ const CreateListing = () => {
                 name="price"
                 value={formData.price}
                 onChange={handleChange}
-<<<<<<< HEAD
-                error={!!priceError}
-                helperText={priceError}
-=======
-                error={!!errors.price}
-                helperText={errors.price}
->>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
+                error={!!priceError || !!errors.price}
+                helperText={priceError || errors.price}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">TND</InputAdornment>,
                 }}
@@ -507,13 +491,8 @@ const CreateListing = () => {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="Your contact number"
-<<<<<<< HEAD
-                error={!!phoneError}
-                helperText={phoneError}
-=======
-                error={!!errors.phone}
-                helperText={errors.phone || "Tunisian number format (e.g., 55123456)"}
->>>>>>> 5c9676ac878109c3801236cf2dd5774f97639fc2
+                error={!!phoneError || !!errors.phone}
+                helperText={phoneError || errors.phone || "Tunisian number format (e.g., 55123456)"}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">+216</InputAdornment>,
                 }}

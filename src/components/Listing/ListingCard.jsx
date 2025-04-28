@@ -20,14 +20,17 @@ import {
   Favorite as FavoriteIcon,
   LocationOn as LocationIcon,
   Delete as DeleteIcon,
+  ShoppingCart as ShoppingCartIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCart } from '../../contexts/CartContext';
 import { listings as listingsApi } from '../../services/api';
 import { format } from 'date-fns';
 
 const ListingCard = ({ listing, showRating = false, onDelete }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToCart } = useCart();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -66,6 +69,11 @@ const ListingCard = ({ listing, showRating = false, onDelete }) => {
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
+  };
+
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
+    addToCart(listing);
   };
 
   return (
@@ -169,6 +177,22 @@ const ListingCard = ({ listing, showRating = false, onDelete }) => {
               </Box>
             )}
           </Box>
+
+          {/* Only show Add to Cart button for product categories */}
+          {(listing.category === 'Electronics' || listing.category === 'Fashion' ||
+            listing.category === 'Home & Garden' || listing.category === 'Vehicles') && (
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="small"
+              fullWidth
+              startIcon={<ShoppingCartIcon />}
+              onClick={handleAddToCart}
+              sx={{ mt: 2 }}
+            >
+              Add to Cart
+            </Button>
+          )}
         </CardContent>
       </Card>
 

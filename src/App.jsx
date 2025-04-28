@@ -6,6 +6,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import theme from './theme';
 import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
 import HomePage from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -19,6 +20,7 @@ import NotFound from './pages/NotFound';
 import Navbar from './components/Navbar/Navbar';
 import ProductDetails from './pages/ProductDetails';
 import ListingDebug from './pages/ListingDebug';
+import Cart from './pages/Cart';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,12 +39,14 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AuthProvider>
-          <Router>
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+          <CartProvider>
+            <Router>
+              <Navbar />
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/cart" element={<Cart />} />
 
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/listings/create" element={<CreateListing />} />
@@ -58,6 +62,7 @@ function App() {
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>
           </Router>
+          </CartProvider>
         </AuthProvider>
         <ToastContainer position="top-right" />
       </ThemeProvider>
